@@ -10,7 +10,7 @@ class Base
 public:
     virtual ~Base() = default;
 
-    virtual void Update() = 0;
+    virtual void update() = 0;
 };
 
 }

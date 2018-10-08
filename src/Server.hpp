@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Config.hpp"
 #include "Protocols/Base.hpp"
 
 #include <memory>
@@ -8,9 +9,12 @@
 class Server
 {
 public:
-    void Update();
+    Server();
+
+    void init(int aArgc, const char** aArgv);
+    void run();
 
 private:
-    std::vector<std::unique_ptr<Protocol::Base>> m_activeProtocols;
-
+    Config m_config;
+    std::vector<std::unique_ptr<Protocols::Base>> m_activeProtocols;
 };
