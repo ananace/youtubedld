@@ -4,7 +4,8 @@
 
 enum : uint32_t
 {
-    Client_All = UINT32_MAX,
+    Client_None = 0,
+    Client_All  = UINT32_MAX,
 };
 
 namespace Protocols

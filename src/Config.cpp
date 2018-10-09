@@ -47,7 +47,7 @@ bool Config::loadDefaults()
 {
     setValue("CacheDir", "$XDG_CACHE_DIR/youtubedld");
     setValue("DataDir", "$XDG_DATA_DIR/youtubedld");
-    setValue("LogFile", "/var/log/youtubedld.log");
+    // setValue("LogFile", "/var/log/youtubedld.log");
 
     return true;
 }
@@ -149,8 +149,6 @@ bool Config::loadFromStream(std::basic_istream<char>& aStream)
                     name += valueName;
                 }
 
-
-                std::transform(name.begin(), name.end(), name.begin(), ::tolower);
                 setValue(name, std::move(valueValue));
             }
         }
@@ -168,24 +166,32 @@ bool Config::hasValue(const std::string& aPath) const
 
 const std::string& Config::getValue(const std::string& aPath) const
 {
+    printf("[CFG] Reading %s\n", aPath.c_str());
+
     auto data = aPath;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
-
-    printf("[CFG] Reading %s\n", aPath.c_str());
 
     return m_values.at(data);
 }
 
 void Config::setValue(const std::string& aPath, const std::string& aValue)
 {
+    printf("[CFG] Setting %s\n", aPath.c_str());
+
     auto data = aPath;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+
     m_values[data] = aValue;
 }
 
 void Config::setValue(const std::string& aPath, std::string&& aValue)
 {
-    m_values[aPath] = std::move(aValue);
+    printf("[CFG] Setting %s\n", aPath.c_str());
+
+    auto data = aPath;
+    std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+
+    m_values[data] = std::move(aValue);
 }
 
 // Template specialiazations for reading data

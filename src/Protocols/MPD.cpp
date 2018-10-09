@@ -7,6 +7,8 @@ using Protocols::MPD;
 
 MPD::MPD(uint16_t port)
     : m_port(port)
+    , m_socket(0)
+    , m_clientCounter(Client_None)
 {
 }
 
@@ -28,9 +30,27 @@ void MPD::update()
 {
     // Check socket backlog
     // Accept connections
+    if (false)
+    {
+        int client = Client_None;
+        do
+        {
+            if (m_clientCounter + 1 >= Client_All)
+                m_clientCounter = 0;
+            client = ++m_clientCounter;
+        } while (m_clientMap.count(client) > 0);
+
+        m_clientMap[client];
+    }
+
     // Read data
     // Generate messages
     // Handle messages
+    for (auto& cl : m_clientMap)
+    {
+        auto sock = cl.second;
+        handleMessage(cl.first);
+    }
 }
 
 void MPD::handleMessage(uint32_t aClient)
