@@ -45,9 +45,9 @@ void Config::clear()
 
 bool Config::loadDefaults()
 {
-    m_values["CacheDir"] = "$XDG_CACHE_DIR/youtubedld";
-    m_values["DataDir"] = "$XDG_DATA_DIR/youtubedld";
-    m_values["LogFile"] = "/var/log/youtubedld.log";
+    setValue("CacheDir", "$XDG_CACHE_DIR/youtubedld");
+    setValue("DataDir", "$XDG_DATA_DIR/youtubedld");
+    setValue("LogFile", "/var/log/youtubedld.log");
 
     return true;
 }
@@ -59,13 +59,19 @@ bool Config::loadFromArgs(int aArgc, const char** aArgv)
         std::string arg(aArgv[i]);
 
         if (arg == "-v")
-            m_values["Verbose"] = "1";
+            setValue("Verbose", "1");
         else if (arg == "-c")
         {
             assert(++i < aArgc);
-            m_values["ConfigDir"] = aArgv[i];
+            setValue("ConfigDir", aArgv[i]);
         }
     }
+
+    return true;
+}
+
+bool Config::loadFromEnv()
+{
 
     return true;
 }
@@ -79,9 +85,11 @@ bool Config::loadFromFile(const std::string& aFile)
     return loadFromStream(ifs);
 }
 
-bool Config::loadFromMemory(size_t aSize, const char* aMemory)
+bool Config::loadFromMemory(const char* aMemory, size_t aSize)
 {
-    return false;
+    std::string data(aMemory, aSize);
+    std::istringstream iss(data);
+    return loadFromStream(iss);
 }
 
 bool Config::loadFromStream(std::basic_istream<char>& aStream)
@@ -143,7 +151,7 @@ bool Config::loadFromStream(std::basic_istream<char>& aStream)
 
 
                 std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-                m_values[name] = std::move(valueValue);
+                setValue(name, std::move(valueValue));
             }
         }
     }
@@ -163,9 +171,21 @@ const std::string& Config::getValue(const std::string& aPath) const
     auto data = aPath;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
 
-    printf("[CFG] Reading %s as %s\n", aPath.c_str(), data.c_str());
+    printf("[CFG] Reading %s\n", aPath.c_str());
 
     return m_values.at(data);
+}
+
+void Config::setValue(const std::string& aPath, const std::string& aValue)
+{
+    auto data = aPath;
+    std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+    m_values[data] = aValue;
+}
+
+void Config::setValue(const std::string& aPath, std::string&& aValue)
+{
+    m_values[aPath] = std::move(aValue);
 }
 
 // Template specialiazations for reading data

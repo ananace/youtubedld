@@ -13,8 +13,9 @@ public:
 
     bool loadDefaults();
     bool loadFromArgs(int aArgc, const char** aArgv);
+    bool loadFromEnv();
     bool loadFromFile(const std::string& aFile);
-    bool loadFromMemory(size_t aSize, const char* aMemory);
+    bool loadFromMemory(const char* aMemory, size_t aSize);
     bool loadFromStream(std::basic_istream<char>& aStream);
 
     bool hasValue(const std::string& aPath) const;
@@ -22,6 +23,8 @@ public:
     const std::string& getValue(const std::string& aPath, const std::string& aDefault) const {
         return hasValue(aPath) ? getValue(aPath) : aDefault;
     }
+    void setValue(const std::string& aPath, const std::string& aValue);
+    void setValue(const std::string& aPath, std::string&& aValue);
 
     template<typename T>
     T getValueConv(const std::string& aPath) const;

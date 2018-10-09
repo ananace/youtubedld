@@ -13,14 +13,14 @@ public:
     MPD(uint16_t port = 0);
     ~MPD();
 
-    bool supportsPost() const;
-    void post();
+    bool supportsPost() const { return true; }
+    void post(uint32_t aClient);
     void update();
 
 private:
-    void handleMessage(uint32_t client);
-    void runCommandList(uint32_t client);
-    bool runCommand(uint32_t client, uint32_t command);
+    void handleMessage(uint32_t aClient);
+    void runCommandList(uint32_t aClient);
+    bool runCommand(uint32_t aClient, uint32_t aCommand);
 
     uint16_t m_port;
 };

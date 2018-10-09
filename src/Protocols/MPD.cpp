@@ -14,13 +14,14 @@ MPD::~MPD()
 {
 }
 
-bool MPD::supportsPost() const
+void MPD::post(uint32_t aClient)
 {
-    return true;
-}
-
-void MPD::post()
-{
+    if (aClient == Client_All)
+    {
+    }
+    else
+    {
+    }
 }
 
 void MPD::update()
@@ -32,18 +33,18 @@ void MPD::update()
     // Handle messages
 }
 
-void MPD::handleMessage(uint32_t client)
+void MPD::handleMessage(uint32_t aClient)
 {
 
 }
 
-void MPD::runCommandList(uint32_t client)
+void MPD::runCommandList(uint32_t aClient)
 {
     std::list<std::string> commands;
     int i = 0;
     for (auto it = std::cbegin(commands); it != std::cend(commands); ++i, ++it)
     {
-        if (!runCommand(client, 0))
+        if (!runCommand(aClient, 0))
         {
             return;
         }
@@ -52,6 +53,8 @@ void MPD::runCommandList(uint32_t client)
     // Send OK
 }
 
-bool MPD::runCommand(uint32_t client, uint32_t command)
+bool MPD::runCommand(uint32_t aClient, uint32_t aCommand)
 {
+    return false;
 }
+
