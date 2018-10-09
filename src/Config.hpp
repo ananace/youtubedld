@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class Config
 {
@@ -16,12 +17,17 @@ public:
     bool loadFromMemory(size_t aSize, const char* aMemory);
     bool loadFromStream(std::basic_istream<char>& aStream);
 
-    inline bool hasValue(const std::string& aPath) { return m_values.count(aPath) > 0; }
+    bool hasValue(const std::string& aPath) const;
+    const std::string& getValue(const std::string& aPath) const;
+    const std::string& getValue(const std::string& aPath, const std::string& aDefault) const {
+        return hasValue(aPath) ? getValue(aPath) : aDefault;
+    }
+
     template<typename T>
-    T getValue(const std::string& aPath);
+    T getValueConv(const std::string& aPath) const;
     template<typename T>
-    T getValue(const std::string& aPath, const T& aDefault) {
-        return hasValue(aPath) ? getValue<T>(aPath) : aDefault;
+    T getValueConv(const std::string& aPath, const T& aDefault) const {
+        return hasValue(aPath) ? getValueConv<T>(aPath) : aDefault;
     }
 
 private:

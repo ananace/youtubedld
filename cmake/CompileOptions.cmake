@@ -18,7 +18,7 @@ endif()
 
 set(DEFAULT_PROJECT_OPTIONS
     DEBUG_POSTFIX             "d"
-    CXX_STANDARD              14
+    CXX_STANDARD              17
     LINKER_LANGUAGE           "CXX"
     POSITION_INDEPENDENT_CODE ON
     CXX_VISIBILITY_PRESET     "hidden"
@@ -48,39 +48,12 @@ set(DEFAULT_COMPILE_DEFINITIONS
     SYSTEM_${SYSTEM_NAME_UPPER}
 )
 
-# MSVC compiler options
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
-    set(DEFAULT_COMPILE_DEFINITIONS ${DEFAULT_COMPILE_DEFINITIONS}
-        _SCL_SECURE_NO_WARNINGS  # Calling any one of the potentially unsafe methods in the Standard C++ Library
-        _CRT_SECURE_NO_WARNINGS  # Calling any one of the potentially unsafe methods in the CRT Library
-    )
-endif ()
-
 
 # 
 # Compile options
 # 
 
 set(DEFAULT_COMPILE_OPTIONS)
-
-# MSVC compiler options
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
-    set(DEFAULT_COMPILE_OPTIONS ${DEFAULT_COMPILE_OPTIONS}
-        /MP           # -> build with multiple processes
-        /W4           # -> warning level 4
-
-        /wd4251       # -> disable warning: 'identifier': class 'type' needs to have dll-interface to be used by clients of class 'type2'
-        /wd4592       # -> disable warning: 'identifier': symbol will be dynamically initialized (implementation limitation)
-
-        $<$<CONFIG:Release>: 
-        /WX           # -> treat warnings as errors
-        /Gw           # -> whole program global optimization
-        /GS-          # -> buffer security check: no 
-        /GL           # -> whole program optimization: enable link-time code generation (disables Zi)
-        /GF           # -> enable string pooling
-        >
-    )
-endif ()
 
 # GCC and Clang compiler options
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
@@ -119,9 +92,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCH
         >
         
         # Required for CMake < 3.1; should be removed if minimum required CMake version is raised.
-        $<$<VERSION_LESS:${CMAKE_VERSION},3.1>:
-            -std=c++14
-        >
+        $<$<VERSION_LESS:${CMAKE_VERSION},3.1>:-std=c++17>
     )
 endif ()
 
@@ -136,6 +107,8 @@ set(DEFAULT_LINKER_OPTIONS)
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(DEFAULT_LINKER_OPTIONS
         -pthread
+
+        $<$<CXX_COMPILER_ID:GNU>:-lstdc++fs>
     )
 endif()
 

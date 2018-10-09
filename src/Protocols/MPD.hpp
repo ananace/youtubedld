@@ -2,6 +2,8 @@
 
 #include "Base.hpp"
 
+#include <cstdint>
+
 namespace Protocols
 {
 
@@ -9,7 +11,10 @@ class MPD : public Base
 {
 public:
     MPD(uint16_t port = 0);
+    ~MPD();
 
+    bool supportsPost() const;
+    void post();
     void update();
 
 private:

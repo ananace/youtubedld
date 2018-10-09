@@ -10,7 +10,20 @@ MPD::MPD(uint16_t port)
 {
 }
 
-void MPD::Update()
+MPD::~MPD()
+{
+}
+
+bool MPD::supportsPost() const
+{
+    return true;
+}
+
+void MPD::post()
+{
+}
+
+void MPD::update()
 {
     // Check socket backlog
     // Accept connections
@@ -19,22 +32,26 @@ void MPD::Update()
     // Handle messages
 }
 
-void MPD::HandleMessage(uint32_t client)
+void MPD::handleMessage(uint32_t client)
 {
 
 }
 
-void MPD::RunCommandList(uint32_t client)
+void MPD::runCommandList(uint32_t client)
 {
     std::list<std::string> commands;
     int i = 0;
-    for (auto& it = commands.cbegin(); it != commands.cend(); ++i, ++it)
+    for (auto it = std::cbegin(commands); it != std::cend(commands); ++i, ++it)
     {
-        if (!RunCommand(client, 0))
+        if (!runCommand(client, 0))
         {
             return;
         }
     }
 
     // Send OK
+}
+
+bool MPD::runCommand(uint32_t client, uint32_t command)
+{
 }
