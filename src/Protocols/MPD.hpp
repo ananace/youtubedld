@@ -15,6 +15,9 @@ public:
     MPD(uint16_t port = 0);
     ~MPD();
 
+    bool init();
+    void close();
+
     bool supportsPost() const { return true; }
     void post(uint32_t aClient);
     void update();
