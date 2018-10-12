@@ -5,11 +5,9 @@
 #include "Protocols/REST.hpp"
 
 #include <chrono>
-#include <experimental/filesystem>
 #include <thread>
 
 using namespace std::literals::chrono_literals;
-namespace fs = std::experimental::filesystem;
 
 Server::Server()
 {
@@ -22,17 +20,11 @@ void Server::init(int aArgc, const char** aArgv)
 
     m_config.loadFromFile("config.ini");
     m_config.loadFromFile("/etc/youtubedld.conf");
-    m_config.loadFromFile("$XDG_CONFIG_DIR/youtubedld.conf");
+    m_config.loadFromFile("${XDG_CONFIG_DIR:-$HOME/.config}/youtubedld.conf");
     m_config.loadFromFile("$HOME/.youtubedldrc");
 
     if (m_config.hasValue("ConfigDir"))
-        for(auto& file : fs::directory_iterator(m_config.getValue("ConfigDir")))
-        {
-            if (file.path().extension() != ".conf")
-                continue;
-
-            m_config.loadFromFile(file.path().string());
-        }
+        m_config.loadFromDir(m_config.getValue("ConfigDir"));
 
     printf("Loaded conf\n");
 

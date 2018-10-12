@@ -14,6 +14,7 @@ public:
     bool loadDefaults();
     bool loadFromArgs(int aArgc, const char** aArgv);
     bool loadFromEnv();
+    bool loadFromDir(const std::string& aDirectory, const std::string& aExt = ".conf");
     bool loadFromFile(const std::string& aFile);
     bool loadFromMemory(const char* aMemory, size_t aSize);
     bool loadFromStream(std::basic_istream<char>& aStream);

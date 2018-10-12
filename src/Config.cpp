@@ -12,6 +12,7 @@ namespace fs = std::filesystem;
 
 namespace
 {
+    // TODO: Redo with string_view
     void _skipWhitespace(std::string::iterator& aIt)
     {
         char c = *aIt;
@@ -45,8 +46,8 @@ void Config::clear()
 
 bool Config::loadDefaults()
 {
-    setValue("CacheDir", "$XDG_CACHE_DIR/youtubedld");
-    setValue("DataDir", "$XDG_DATA_DIR/youtubedld");
+    setValue("CacheDir", "${XDG_CACHE_DIR:-$HOME/.cache}/youtubedld");
+    setValue("DataDir", "${XDG_DATA_DIR:-$HOME/.data}/youtubedld");
     // setValue("LogFile", "/var/log/youtubedld.log");
 
     return true;
@@ -74,6 +75,24 @@ bool Config::loadFromEnv()
 {
 
     return true;
+}
+
+bool Config::loadFromDir(const std::string& aDirectory, const std::string& aExt)
+{
+    auto path = Util::ExpandPath(aDirectory);
+    if (!std::filesystem::is_directory(path))
+        return false;
+
+    bool any = false;
+    for (auto& entry : std::filesystem::directory_iterator(path))
+    {
+        if (entry.path().extension() != aExt)
+            continue;
+
+        any = any || loadFromFile(entry.path().string());
+    }
+
+    return any;
 }
 
 bool Config::loadFromFile(const std::string& aFile)
