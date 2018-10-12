@@ -1,8 +1,8 @@
 #include "Server.hpp"
-
 #include "Protocols/MPD.hpp"
 #include "Protocols/MPRIS.hpp"
 #include "Protocols/REST.hpp"
+#include "Util/Logging.hpp"
 
 #include <chrono>
 #include <thread>
@@ -26,7 +26,7 @@ void Server::init(int aArgc, const char** aArgv)
     if (m_config.hasValue("ConfigDir"))
         m_config.loadFromDir(m_config.getValue("ConfigDir"));
 
-    printf("Loaded conf\n");
+    Util::Log(Util::Log_Info) << "Loaded conf";
 
     // TODO: Plugin-ize
     if (m_config.getValueConv("MPD/Enabled", false))

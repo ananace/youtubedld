@@ -1,4 +1,5 @@
 #include "Config.hpp"
+#include "Util/Logging.hpp"
 #include "Util/Path.hpp"
 
 #include <algorithm>
@@ -186,7 +187,7 @@ bool Config::hasValue(const std::string& aPath) const
 
 const std::string& Config::getValue(const std::string& aPath) const
 {
-    printf("[CFG] Reading %s\n", aPath.c_str());
+    Util::Log(Util::Log_Info) << "[CFG] Reading " << aPath;
 
     auto data = aPath;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
@@ -196,7 +197,7 @@ const std::string& Config::getValue(const std::string& aPath) const
 
 void Config::setValue(const std::string& aPath, const std::string& aValue)
 {
-    printf("[CFG] Setting %s\n", aPath.c_str());
+    Util::Log(Util::Log_Info) << "[CFG] Setting " << aPath;
 
     auto data = aPath;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
@@ -206,7 +207,7 @@ void Config::setValue(const std::string& aPath, const std::string& aValue)
 
 void Config::setValue(const std::string& aPath, std::string&& aValue)
 {
-    printf("[CFG] Setting %s\n", aPath.c_str());
+    Util::Log(Util::Log_Info) << "[CFG] Setting " << aPath;
 
     auto data = aPath;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
