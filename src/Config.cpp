@@ -1,14 +1,14 @@
 #include "Config.hpp"
+#include "Util/Path.hpp"
 
 #include <algorithm>
-#include <experimental/filesystem>
 #include <fstream>
 #include <sstream>
 #include <vector>
 
 #include <cassert>
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -78,6 +78,7 @@ bool Config::loadFromEnv()
 
 bool Config::loadFromFile(const std::string& aFile)
 {
+    auto path = Util::ExpandPath(aFile);
     std::ifstream ifs(aFile);
     if (!ifs)
         return false;

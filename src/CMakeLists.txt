@@ -31,6 +31,9 @@ set(headers
 
     Protocols/Base/Event.hpp
     Protocols/MPD/Commands.hpp
+
+    Util/Path.hpp
+    Util/Tokeniser.hpp
 )
 
 set(sources
@@ -41,6 +44,8 @@ set(sources
     Protocols/MPD.cpp
     Protocols/MPRIS.cpp
     Protocols/REST.cpp
+
+    Util/Path.cpp
 
     main.cpp
 )
