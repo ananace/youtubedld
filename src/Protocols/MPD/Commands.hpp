@@ -3,7 +3,7 @@
 #include <array>
 #include <string>
 
-namespace Procotols
+namespace Protocols
 {
 
 namespace MPD
@@ -145,14 +145,6 @@ static constexpr struct CommandDefinition AvailableCommands[] = {
     { "update", PERMISSION_CONTROL, 0, 1 },
     { "urlhandlers", PERMISSION_READ, 0, 0 },
     { "volume", PERMISSION_CONTROL, 1, 1 },
-};
-
-class Command
-{
-public:
-
-private:
-
 };
 
 }

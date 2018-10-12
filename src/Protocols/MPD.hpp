@@ -9,11 +9,11 @@
 namespace Protocols
 {
 
-class MPD : public Base
+class MPDProto : public Base
 {
 public:
-    MPD(uint16_t port = 0);
-    ~MPD();
+    MPDProto(uint16_t port = 0);
+    ~MPDProto();
 
     bool init();
     void close();

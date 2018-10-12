@@ -1,35 +1,40 @@
 #include "MPD.hpp"
 #include "MPD/Commands.hpp"
+#include "../Util/Tokeniser.hpp"
 
-#include <dequeue>
+#include <algorithm>
+#include <deque>
 #include <list>
+#include <vector>
 
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+using Protocols::MPDProto;
+using namespace Protocols::MPD;
+
 struct MPDMessage
 {
     uint32_t Client;
-    MPD::Commands Command;
-    std::string Data;
+    std::string CommandLine;
+    const CommandDefinition* Command;
+    std::vector<string_view> Arguments;
 };
 
-using Protocols::MPD;
-
-MPD::MPD(uint16_t port)
+MPDProto::MPDProto(uint16_t port)
     : m_port(port)
     , m_socket(0)
     , m_clientCounter(Client_None)
 {
 }
 
-MPD::~MPD()
+MPDProto::~MPDProto()
 {
 }
 
-bool MPD::init()
+bool MPDProto::init()
 {
     m_socket = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in addr;
@@ -43,11 +48,11 @@ bool MPD::init()
     listen(m_socket, 5);
 }
 
-void MPD::close()
+void MPDProto::close()
 {
 }
 
-void MPD::post(uint32_t aClient)
+void MPDProto::post(uint32_t aClient)
 {
     if (aClient == Client_All)
     {
@@ -57,7 +62,7 @@ void MPD::post(uint32_t aClient)
     }
 }
 
-void MPD::update()
+void MPDProto::update()
 {
     // Check socket backlog
 
@@ -90,14 +95,35 @@ void MPD::update()
         }
     }
 
-    std::dequeue<MPDMessage> messages;
+    std::deque<MPDMessage> messages;
     // Generate messages
     for (auto& cl : m_clientMap)
     {
         if (cl.second.Buffer.empty())
             continue;
 
+        auto cmdTokeniser = Util::LineTokeniser(cl.second.Buffer);
+        for (auto& commandLine : cmdTokeniser)
+        {
+            auto argTokeniser = Util::SpaceTokeniser(cl.second.Buffer);
+            auto it = argTokeniser.cbegin();
 
+            auto command = *it++;
+            std::vector<string_view> arguments;
+            std::copy(it, argTokeniser.cend(), std::back_inserter(arguments));
+
+            const CommandDefinition* cmd = nullptr;;
+            auto cit = std::find_if(std::cbegin(AvailableCommands), std::cend(AvailableCommands), [command](const auto& def) { return command == def.Name; });
+            if (cit != std::cend(AvailableCommands))
+                cmd = &(*cit);
+
+            messages.push_back(MPDMessage{
+                cl.first,
+                std::string(commandLine),
+                cmd,
+                std::move(arguments)
+            });
+        }
     }
 
     // Handle messages
@@ -107,12 +133,12 @@ void MPD::update()
     }
 }
 
-void MPD::handleMessage(uint32_t aClient)
+void MPDProto::handleMessage(uint32_t aClient)
 {
 
 }
 
-void MPD::runCommandList(uint32_t aClient)
+void MPDProto::runCommandList(uint32_t aClient)
 {
     std::list<std::string> commands;
     int i = 0;
@@ -127,7 +153,7 @@ void MPD::runCommandList(uint32_t aClient)
     // Send OK
 }
 
-bool MPD::runCommand(uint32_t aClient, uint32_t aCommand)
+bool MPDProto::runCommand(uint32_t aClient, uint32_t aCommand)
 {
     return false;
 }

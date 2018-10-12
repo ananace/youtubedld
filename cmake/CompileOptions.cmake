@@ -108,7 +108,7 @@ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_SYSTEM_NAME}" MATCHES "L
     set(DEFAULT_LINKER_OPTIONS
         -pthread
 
-        $<$<CXX_COMPILER_ID:GNU>:-lstdc++fs>
+        -lstdc++fs
     )
 endif()
 

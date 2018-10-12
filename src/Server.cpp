@@ -40,7 +40,7 @@ void Server::init(int aArgc, const char** aArgv)
     if (m_config.getValueConv("MPD/Enabled", false))
     {
         uint16_t port = m_config.getValueConv<uint16_t>("MPD/Port", 6600);
-        m_activeProtocols.push_back(std::make_unique<Protocols::MPD>(port));
+        m_activeProtocols.push_back(std::make_unique<Protocols::MPDProto>(port));
         printf("Enabling MPD on port %i\n", port);
     }
 
