@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace Util
 {
@@ -28,6 +29,8 @@ Logger& Log(LogLevels aLogLevel);
 class Logger
 {
 public:
+    // virtual void Write(const std::string& aMsg) = 0;
+
     virtual Logger& operator<<(const std::string& aMsg) = 0;
     virtual Logger& operator<<(const char* aMsg) { return *this << std::string(aMsg); }
 
@@ -51,12 +54,18 @@ class FileLogger : public Logger
 {
 public:
     Logger& operator<<(const std::string& aMsg);
+
+private:
+    FILE* mFile;
 };
 
 class CombinedLogger : public Logger
 {
 public:
     Logger& operator<<(const std::string& aMsg);
+
+private:
+    std::vector<Logger*> mLoggers;
 };
 
 }
