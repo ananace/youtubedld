@@ -30,13 +30,13 @@ class Logger
 public:
     virtual ~Logger() = default;
 
-    virtual void write(const std::string& aMsg) = 0;
+    virtual void write(const std::string& aMsg) const = 0;
 
-    virtual Logger& operator<<(const std::string& aMsg) { write(aMsg); return *this; }
-    virtual Logger& operator<<(const char* aMsg) { write(std::string(aMsg)); return *this; }
+    virtual const Logger& operator<<(const std::string& aMsg) const { write(aMsg); return *this; }
+    virtual const Logger& operator<<(const char* aMsg) const { write(std::string(aMsg)); return *this; }
 
     template<typename T>
-    Logger& operator<<(const T& aObj) { return (*this << std::to_string(aObj)); }
+    const Logger& operator<<(const T& aObj) const { return (*this << std::to_string(aObj)); }
 };
 
 class LogWrapper : public Logger
@@ -48,25 +48,26 @@ public:
     ~LogWrapper() {
         mRealLogger.write("\n");
     }
-    void write(const std::string& aMsg) {
+    void write(const std::string& aMsg) const {
         mRealLogger.write(aMsg);
     }
 
 private:
     Logger& mRealLogger;
 };
+
 LogWrapper Log(LogLevels aLogLevel);
 
 class NullLogger : public Logger
 {
 public:
-    void write(const std::string& /*aMsg*/) final {}
+    void write(const std::string& /*aMsg*/) const final {}
 };
 
 class StdoutLogger : public Logger
 {
 public:
-    virtual void write(const std::string& aMsg) override;
+    virtual void write(const std::string& aMsg) const override;
 };
 
 class FileLogger : public Logger
@@ -76,7 +77,7 @@ public:
     ~FileLogger();
 
     void setFile(const std::string& aPath);
-    virtual void write(const std::string& aMsg) override;
+    virtual void write(const std::string& aMsg) const override;
 
 private:
     FILE* mFile;
@@ -85,10 +86,22 @@ private:
 class CombinedLogger : public Logger
 {
 public:
-    virtual void write(const std::string& aMsg) override;
+    virtual void write(const std::string& aMsg) const override;
 
 private:
     std::vector<Logger*> mLoggers;
+};
+
+class PrependLogger : public Logger
+{
+public:
+    typedef std::string(*Prepend_t)();
+
+    void setPrepend(Prepend_t);
+    virtual void write(const std::string& aMsg) const override;
+
+private:
+    std::unique_ptr<Logger> mRealLogger;
 };
 
 }

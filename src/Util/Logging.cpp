@@ -24,6 +24,7 @@ void Util::SetLogger(Logger* aLogger)
 {
     sLogger.reset(aLogger);
 }
+
 Util::LogWrapper Util::Log(LogLevels aLogLevel)
 {
     if (aLogLevel < sLogLevel || !sLogger)
@@ -31,7 +32,7 @@ Util::LogWrapper Util::Log(LogLevels aLogLevel)
     return LogWrapper(*sLogger);
 }
 
-void Util::StdoutLogger::write(const std::string& aMsg)
+void Util::StdoutLogger::write(const std::string& aMsg) const
 {
     printf(aMsg.c_str());
 }
@@ -57,13 +58,13 @@ void Util::FileLogger::setFile(const std::string& aPath)
     mFile = fopen(path.c_str(), "a");
 }
 
-void Util::FileLogger::write(const std::string& aMsg)
+void Util::FileLogger::write(const std::string& aMsg) const
 {
     if (mFile)
         fprintf(mFile, aMsg.c_str());
 }
 
-void Util::CombinedLogger::write(const std::string& aMsg)
+void Util::CombinedLogger::write(const std::string& aMsg) const
 {
     for (auto& logger : mLoggers)
         logger->write(aMsg);
