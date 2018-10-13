@@ -1,4 +1,5 @@
 #include "Logging.hpp"
+#include "Path.hpp"
 
 namespace
 {
@@ -23,30 +24,47 @@ void Util::SetLogger(Logger* aLogger)
 {
     sLogger.reset(aLogger);
 }
-Util::Logger& Util::Log(LogLevels aLogLevel)
+Util::LogWrapper Util::Log(LogLevels aLogLevel)
 {
     if (aLogLevel < sLogLevel || !sLogger)
-        return sNullLogger;
-    return *sLogger;
+        return LogWrapper(sNullLogger);
+    return LogWrapper(*sLogger);
 }
 
-
-Util::Logger& Util::StdoutLogger::operator<<(const std::string& aMsg)
+void Util::StdoutLogger::write(const std::string& aMsg)
 {
     printf(aMsg.c_str());
-    return *this;
 }
-Util::Logger& Util::FileLogger::operator<<(const std::string& aMsg)
+
+Util::FileLogger::FileLogger(const std::string& aPath)
+    : mFile(nullptr)
 {
-    fprintf(mFile, aMsg.c_str());
-    return *this;
+    setFile(aPath);
 }
-Util::Logger& Util::CombinedLogger::operator<<(const std::string& aMsg)
+
+Util::FileLogger::~FileLogger()
 {
-    for (auto& loggerPtr : mLoggers)
-    {
-        auto& logger = *loggerPtr;
-        logger << aMsg;
-    }
-    return *this;
+    if (mFile)
+        fclose(mFile);
+}
+
+void Util::FileLogger::setFile(const std::string& aPath)
+{
+    if (mFile)
+        fclose(mFile);
+
+    auto path = Util::ExpandPath(aPath);
+    mFile = fopen(path.c_str(), "a");
+}
+
+void Util::FileLogger::write(const std::string& aMsg)
+{
+    if (mFile)
+        fprintf(mFile, aMsg.c_str());
+}
+
+void Util::CombinedLogger::write(const std::string& aMsg)
+{
+    for (auto& logger : mLoggers)
+        logger->write(aMsg);
 }

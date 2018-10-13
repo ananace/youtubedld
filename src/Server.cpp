@@ -15,6 +15,9 @@ Server::Server()
 
 void Server::init(int aArgc, const char** aArgv)
 {
+    Util::SetLogger(new Util::StdoutLogger);
+    Util::SetLogLevel(Util::Log_Debug);
+
     m_config.loadDefaults();
     m_config.loadFromArgs(aArgc, aArgv);
 

@@ -24,36 +24,59 @@ template<typename T, typename... Args>
 void SetLogger(Args&&... aArgs) {
     SetLogger(std::make_unique<T>(std::forward<Args>(aArgs)...));
 }
-Logger& Log(LogLevels aLogLevel);
 
 class Logger
 {
 public:
-    // virtual void Write(const std::string& aMsg) = 0;
+    virtual ~Logger() = default;
 
-    virtual Logger& operator<<(const std::string& aMsg) = 0;
-    virtual Logger& operator<<(const char* aMsg) { return *this << std::string(aMsg); }
+    virtual void write(const std::string& aMsg) = 0;
+
+    virtual Logger& operator<<(const std::string& aMsg) { write(aMsg); return *this; }
+    virtual Logger& operator<<(const char* aMsg) { write(std::string(aMsg)); return *this; }
 
     template<typename T>
     Logger& operator<<(const T& aObj) { return (*this << std::to_string(aObj)); }
 };
 
+class LogWrapper : public Logger
+{
+public:
+    LogWrapper(Logger& aRealLogger)
+        : mRealLogger(aRealLogger)
+    { }
+    ~LogWrapper() {
+        mRealLogger.write("\n");
+    }
+    void write(const std::string& aMsg) {
+        mRealLogger.write(aMsg);
+    }
+
+private:
+    Logger& mRealLogger;
+};
+LogWrapper Log(LogLevels aLogLevel);
+
 class NullLogger : public Logger
 {
 public:
-    Logger& operator<<(const std::string&) final { return *this; }
+    void write(const std::string& /*aMsg*/) final {}
 };
 
 class StdoutLogger : public Logger
 {
 public:
-    Logger& operator<<(const std::string& aMsg);
+    virtual void write(const std::string& aMsg) override;
 };
 
 class FileLogger : public Logger
 {
 public:
-    Logger& operator<<(const std::string& aMsg);
+    FileLogger(const std::string& aPath);
+    ~FileLogger();
+
+    void setFile(const std::string& aPath);
+    virtual void write(const std::string& aMsg) override;
 
 private:
     FILE* mFile;
@@ -62,7 +85,7 @@ private:
 class CombinedLogger : public Logger
 {
 public:
-    Logger& operator<<(const std::string& aMsg);
+    virtual void write(const std::string& aMsg) override;
 
 private:
     std::vector<Logger*> mLoggers;
