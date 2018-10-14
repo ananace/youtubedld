@@ -41,7 +41,7 @@ private:
         std::string Buffer;
     };
 
-    void handleMessage(uint32_t aClient);
+    void handleMessage(void* aMessageData);
     void runCommandList(uint32_t aClient);
     bool runCommand(uint32_t aClient, uint32_t aCommand);
 

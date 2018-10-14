@@ -117,6 +117,6 @@ void Server::run()
         }
 
         /// TODO: CV and locking instead
-        std::this_thread::sleep_for(5ms);
+        // std::this_thread::sleep_for(5ms);
     }
 }

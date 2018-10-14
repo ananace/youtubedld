@@ -104,7 +104,7 @@ public:
 
         bool operator==(const ConstIterator& rhs) const
         {
-            return this == &rhs || (m_data == rhs.m_data);
+            return this == &rhs || (m_data == rhs.m_data && m_token == rhs.m_token);
         }
 
         bool operator!=(const ConstIterator& rhs) const
