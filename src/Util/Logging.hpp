@@ -30,30 +30,41 @@ class Logger
 public:
     virtual ~Logger() = default;
 
-    virtual void write(const std::string& aMsg) const = 0;
-
     virtual const Logger& operator<<(const std::string& aMsg) const { write(aMsg); return *this; }
     virtual const Logger& operator<<(const char* aMsg) const { write(std::string(aMsg)); return *this; }
 
     template<typename T>
     const Logger& operator<<(const T& aObj) const { return (*this << std::to_string(aObj)); }
+
+    virtual void begin(LogLevels /* aLevel */) const {}
+    virtual void write(const std::string& aMsg) const = 0;
 };
 
 class LogWrapper : public Logger
 {
 public:
     LogWrapper(Logger& aRealLogger)
-        : mRealLogger(aRealLogger)
+        : mRealLogger(&aRealLogger)
     { }
+    LogWrapper(const LogWrapper&) = delete;
+    LogWrapper(LogWrapper&& move)
+        : mRealLogger(std::move(move.mRealLogger))
+    { move.mRealLogger = nullptr; }
     ~LogWrapper() {
-        mRealLogger.write("\n");
+        if (mRealLogger)
+            mRealLogger->write("\n");
+    }
+    void begin(LogLevels aLevel) const {
+        if (mRealLogger)
+            mRealLogger->begin(aLevel);
     }
     void write(const std::string& aMsg) const {
-        mRealLogger.write(aMsg);
+        if (mRealLogger)
+            mRealLogger->write(aMsg);
     }
 
 private:
-    Logger& mRealLogger;
+    Logger* mRealLogger;
 };
 
 LogWrapper Log(LogLevels aLogLevel);
@@ -86,7 +97,10 @@ private:
 class CombinedLogger : public Logger
 {
 public:
+    void addLogger(Logger* aLogger);
+
     virtual void write(const std::string& aMsg) const override;
+    virtual void begin(LogLevels aLevel) const override;
 
 private:
     std::vector<Logger*> mLoggers;
@@ -95,13 +109,17 @@ private:
 class PrependLogger : public Logger
 {
 public:
-    typedef std::string(*Prepend_t)();
+    typedef std::string(*Prepend_t)(LogLevels);
+
+    PrependLogger(Logger* aLogger, Prepend_t aPrepender = nullptr);
 
     void setPrepend(Prepend_t);
-    virtual void write(const std::string& aMsg) const override;
+    void write(const std::string& aMsg) const final;
+    void begin(LogLevels aLevel) const final;
 
 private:
     std::unique_ptr<Logger> mRealLogger;
+    Prepend_t mPrepend;
 };
 
 }

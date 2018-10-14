@@ -29,7 +29,9 @@ Util::LogWrapper Util::Log(LogLevels aLogLevel)
 {
     if (aLogLevel < sLogLevel || !sLogger)
         return LogWrapper(sNullLogger);
-    return LogWrapper(*sLogger);
+    auto ret = LogWrapper(*sLogger);
+    ret.begin(aLogLevel);
+    return std::move(ret);
 }
 
 void Util::StdoutLogger::write(const std::string& aMsg) const
@@ -68,4 +70,37 @@ void Util::CombinedLogger::write(const std::string& aMsg) const
 {
     for (auto& logger : mLoggers)
         logger->write(aMsg);
+}
+
+void Util::CombinedLogger::begin(LogLevels aLevel) const
+{
+    for (auto& logger : mLoggers)
+        logger->begin(aLevel);
+}
+
+void Util::CombinedLogger::addLogger(Logger* aLogger)
+{
+    mLoggers.push_back(aLogger);
+}
+
+Util::PrependLogger::PrependLogger(Logger* aLogger, Prepend_t aPrependMethod)
+    : mRealLogger(aLogger)
+    , mPrepend(aPrependMethod)
+{
+}
+
+void Util::PrependLogger::setPrepend(Prepend_t aPrependMethod)
+{
+    mPrepend = aPrependMethod;
+}
+
+void Util::PrependLogger::begin(LogLevels aLevel) const
+{
+    mRealLogger->write(mPrepend(aLevel));
+    mRealLogger->begin(aLevel);
+}
+
+void Util::PrependLogger::write(const std::string& aMsg) const
+{
+    mRealLogger->write(aMsg);
 }

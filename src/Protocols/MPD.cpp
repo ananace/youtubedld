@@ -1,5 +1,6 @@
 #include "MPD.hpp"
 #include "MPD/Commands.hpp"
+#include "../Util/Logging.hpp"
 #include "../Util/Tokeniser.hpp"
 
 #include <algorithm>
@@ -36,6 +37,7 @@ MPDProto::~MPDProto()
 
 bool MPDProto::init()
 {
+    Util::Log(Util::Log_Debug) << "[MPD] Starting on port " << m_port;
     m_socket = socket(AF_INET, SOCK_STREAM, 0);
     sockaddr_in addr;
     addr.sin_family = AF_INET;
@@ -64,6 +66,9 @@ void MPDProto::post(uint32_t aClient)
 
 void MPDProto::update()
 {
+    if (m_socket == 0)
+        return;
+
     // Check socket backlog
 
     // Accept connections

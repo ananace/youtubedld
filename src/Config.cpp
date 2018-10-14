@@ -197,7 +197,7 @@ const std::string& Config::getValue(const std::string& aPath) const
 
 void Config::setValue(const std::string& aPath, const std::string& aValue)
 {
-    Util::Log(Util::Log_Info) << "[CFG] Setting " << aPath;
+    Util::Log(Util::Log_Debug) << "[CFG] Setting " << aPath << " to \"" << aValue << "\"";
 
     auto data = aPath;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
@@ -207,7 +207,7 @@ void Config::setValue(const std::string& aPath, const std::string& aValue)
 
 void Config::setValue(const std::string& aPath, std::string&& aValue)
 {
-    Util::Log(Util::Log_Info) << "[CFG] Setting " << aPath;
+    Util::Log(Util::Log_Debug) << "[CFG] Setting " << aPath << " to \"" << aValue << "\"";
 
     auto data = aPath;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);

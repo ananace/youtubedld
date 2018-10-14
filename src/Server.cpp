@@ -9,13 +9,41 @@
 
 using namespace std::literals::chrono_literals;
 
+namespace
+{
+
+std::string formatTime(Util::LogLevels aLevel)
+{
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    auto ts = localtime(&time);
+    char timeBuf[32];
+    std::strftime(timeBuf, 32, "[ |%H:%M:%S] ", ts);
+
+    static constexpr char LogLevels[] = { 'D', 'I', 'W', 'E' };
+    timeBuf[1] = LogLevels[int(aLevel)];
+    return timeBuf;
+}
+
+}
+
 Server::Server()
 {
 }
 
 void Server::init(int aArgc, const char** aArgv)
 {
-    Util::SetLogger(new Util::StdoutLogger);
+    {
+        auto outputLogger = new Util::StdoutLogger;
+        auto combinedLogger = new Util::CombinedLogger;
+        auto timeLogger = new Util::PrependLogger(combinedLogger);
+
+        combinedLogger->addLogger(outputLogger);
+        timeLogger->setPrepend(formatTime);
+
+        Util::SetLogger(timeLogger);
+    }
+
     Util::SetLogLevel(Util::Log_Debug);
 
     m_config.loadDefaults();
@@ -36,20 +64,20 @@ void Server::init(int aArgc, const char** aArgv)
     {
         uint16_t port = m_config.getValueConv<uint16_t>("MPD/Port", 6600);
         m_activeProtocols.push_back(std::make_unique<Protocols::MPDProto>(port));
-        printf("Enabling MPD on port %i\n", port);
+        Util::Log(Util::Log_Info) << "Enabling MPD on port " << port;
     }
 
     if (m_config.getValueConv("MPRIS/Enabled", false))
     {
         // m_activeProtocols.push_back(std::make_unique<Protocols::MPRIS>());
-        printf("Enabling MPRIS");
+        Util::Log(Util::Log_Info) << "Enabling MPRIS";
     }
 
     if (m_config.getValueConv("REST/Enabled", false))
     {
         uint16_t port = m_config.getValueConv<uint16_t>("REST/Port", 3000);
         // m_activeProtocols.push_back(std::make_unique<Protocols::REST>(port));
-        printf("Enabling REST on port %i\n", port);
+        Util::Log(Util::Log_Info) << "Enabling REST on port " << port;
     }
 }
 

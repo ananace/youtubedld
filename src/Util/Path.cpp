@@ -36,7 +36,7 @@ std::filesystem::path Util::ExpandPath(const std::filesystem::path& aPath, bool 
 
     wordfree(&p);
 
-    Log(Log_Debug) << "Path \"" << aPath.string() << "\" expanded to \"" << ret.string() << "\"";
+    Log(Log_Debug) << "[Path] \"" << aPath.string() << "\" expanded to \"" << ret.string() << "\"";
 
     return ret;
 }
