@@ -10,10 +10,14 @@ Util::PathExpandError::PathExpandError(const std::string& aMsg)
 std::filesystem::path Util::ExpandPath(const std::filesystem::path& aPath, bool throws)
 {
     wordexp_t p;
-    int err = wordexp(aPath.c_str(), &p, WRDE_NOCMD | WRDE_UNDEF);
+    int flags = WRDE_NOCMD;
+    if (throws)
+        flags |= WRDE_UNDEF;
+    int err = wordexp(aPath.c_str(), &p, flags);
 
-    if (err != 0 && throws)
+    if (err != 0)
     {
+        Log(Log_Debug) << "[Path] \"" << aPath.string() << "\" failed to expand " << err;
         if (err == WRDE_BADCHAR)
             throw PathExpandError("Bad character in substitution");
         if (err == WRDE_BADVAL)

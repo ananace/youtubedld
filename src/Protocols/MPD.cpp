@@ -87,6 +87,10 @@ void MPDProto::update()
         } while (m_clientMap.count(client) > 0);
 
         m_clientMap[client].Socket = ret;
+
+        char buf[64];
+        sprintf(buf, "OK MPD %i.%i.%i\n", kProtocolVersionMajor, kProtocolVersionMinor, kProtocolVersionPatch);
+        writeData(client, buf);
     }
 
     // Read data
@@ -163,3 +167,9 @@ bool MPDProto::runCommand(uint32_t aClient, uint32_t aCommand)
     return false;
 }
 
+void MPDProto::writeData(uint32_t aClient, const std::string& aData)
+{
+    auto& cl = m_clientMap.at(aClient);
+
+    send(cl.Socket, aData.c_str(), aData.size(), 0);
+}

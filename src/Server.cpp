@@ -79,13 +79,21 @@ void Server::init(int aArgc, const char** aArgv)
         // m_activeProtocols.push_back(std::make_unique<Protocols::REST>(port));
         Util::Log(Util::Log_Info) << "Enabling REST on port " << port;
     }
+
+    for (auto it = m_activeProtocols.begin(); it != m_activeProtocols.end(); )
+    {
+        if (!(*it)->init())
+            m_activeProtocols.erase(it++);
+        else
+            ++it;
+    }
 }
 
 void Server::run()
 {
     if (m_activeProtocols.empty())
     {
-        printf("No active protocols, exiting.\n");
+        Util::Log(Util::Log_Info) << "No active protocols, exiting.";
         return;
     }
 

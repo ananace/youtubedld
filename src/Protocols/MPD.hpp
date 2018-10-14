@@ -9,6 +9,18 @@
 namespace Protocols
 {
 
+namespace MPD
+{
+
+enum
+{
+    kProtocolVersionMajor = 1,
+    kProtocolVersionMinor = 1,
+    kProtocolVersionPatch = 1,
+};
+
+}
+
 class MPDProto : public Base
 {
 public:
@@ -32,6 +44,8 @@ private:
     void handleMessage(uint32_t aClient);
     void runCommandList(uint32_t aClient);
     bool runCommand(uint32_t aClient, uint32_t aCommand);
+
+    void writeData(uint32_t aClient, const std::string& aData);
 
     uint16_t m_port;
     int m_socket;
