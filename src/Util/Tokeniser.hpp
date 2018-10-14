@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Logging.hpp"
+
 #include <utility>
 
 #if __has_include(<string_view>)
@@ -45,18 +47,12 @@ public:
         explicit ConstIterator(const Source& data)
             : m_data(data)
         {
-            auto search = m_data.find_first_of(Delimiter);
-            if (search != string_view::npos)
-                m_token = m_data.substr(0, search);
-            m_data.remove_prefix(std::min(search, m_data.size()));
+            moveToNext();
         }
         explicit ConstIterator(Source&& data)
             : m_data(std::move(data))
         {
-            auto search = m_data.find_first_of(Delimiter);
-            if (search != string_view::npos)
-                m_token = m_data.substr(0, search);
-            m_data.remove_prefix(std::min(search, m_data.size()));
+            moveToNext();
         }
         ConstIterator(const ConstIterator& copy) = default;
         ConstIterator(ConstIterator&& move) noexcept = default;
@@ -65,19 +61,31 @@ public:
         ConstIterator& operator=(const ConstIterator& copy) = default;
         ConstIterator& operator=(ConstIterator&& move) noexcept = default;
 
-        ConstIterator& operator++()
+        void moveToNext()
         {
             auto search = m_data.find_first_of(Delimiter);
             if (search != string_view::npos)
+            {
                 m_token = m_data.substr(0, search);
-            m_data.remove_prefix(std::min(search, m_data.size()));
+                m_data.remove_prefix(std::min(search + 1, m_data.size()));
+            }
+            else
+            {
+                m_token.remove_prefix(m_token.size());
+                m_data.remove_prefix(m_data.size());;
+            }
+        }
+
+        ConstIterator& operator++()
+        {
+            moveToNext();
             return *this;
         }
 
         ConstIterator operator++(int)
         {
             auto copy(*this);
-            ++*this;
+            moveToNext();
             return copy;
         }
 
@@ -96,8 +104,7 @@ public:
 
         bool operator==(const ConstIterator& rhs) const
         {
-            return this == &rhs
-                || (m_data.cbegin() == rhs.m_data.cbegin() && m_data.cend() == rhs.m_data.cend() && m_token == rhs.m_token);
+            return this == &rhs || (m_data == rhs.m_data);
         }
 
         bool operator!=(const ConstIterator& rhs) const
