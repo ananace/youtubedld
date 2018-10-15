@@ -4,6 +4,7 @@
 #include "Protocols/REST.hpp"
 #include "Util/Logging.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <thread>
 
@@ -80,13 +81,13 @@ void Server::init(int aArgc, const char** aArgv)
         Util::Log(Util::Log_Info) << "Enabling REST on port " << port;
     }
 
-    for (auto it = m_activeProtocols.begin(); it != m_activeProtocols.end(); )
-    {
-        if (!(*it)->init())
-            m_activeProtocols.erase(it++);
-        else
-            ++it;
-    }
+
+    auto removed = std::remove_if(m_activeProtocols.begin(), m_activeProtocols.end(), [](auto& prot) {
+        return !prot->init();
+    });
+
+    if (removed != m_activeProtocols.end())
+        m_activeProtocols.erase(removed, m_activeProtocols.end());
 }
 
 void Server::run()

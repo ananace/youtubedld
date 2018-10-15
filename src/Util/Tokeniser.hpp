@@ -71,8 +71,8 @@ public:
             }
             else
             {
-                m_token.remove_prefix(m_token.size());
-                m_data.remove_prefix(m_data.size());;
+                m_token = m_data;
+                m_data.remove_prefix(m_data.size());
             }
         }
 
