@@ -106,6 +106,8 @@ void MPDProto::update()
         tv.tv_usec = 5000;
 
         int ret = select(m_socket + 1, &fds, nullptr, nullptr, &tv);
+        if (ret <= 0)
+            Util::Log(Util::Log_Warning) << "[MPD] select in backlog check returned " << ret;
 
         waiting = FD_ISSET(m_socket, &fds);
 
@@ -120,6 +122,8 @@ void MPDProto::update()
         sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
         int ret = accept(m_socket, reinterpret_cast<sockaddr*>(&client_addr), &client_len);
+        if (ret <= 0)
+            Util::Log(Util::Log_Warning) << "[MPD] accept returned " << ret;
 
         if (ret != EWOULDBLOCK)
         {
@@ -134,7 +138,7 @@ void MPDProto::update()
             m_clientMap[client].Socket = ret;
 
             char buf[64];
-            sprintf(buf, "OK MPD %i.%i.%i\n", kProtocolVersionMajor, kProtocolVersionMinor, kProtocolVersionPatch);
+            snprintf(buf, 64, "OK MPD %i.%i.%i\n", kProtocolVersionMajor, kProtocolVersionMinor, kProtocolVersionPatch);
             writeData(client, buf);
 
             Util::Log(Util::Log_Info) << "[MPD] Accepted connection from " << client_addr.sin_addr.s_addr << ":" << client_addr.sin_port;
@@ -163,6 +167,8 @@ void MPDProto::update()
         tv.tv_usec = 5000;
 
         int ret = select(maxSocket + 1, &fds, nullptr, nullptr, &tv);
+        if (ret <= 0)
+            Util::Log(Util::Log_Warning) << "[MPD] select in read returned " << ret;
 
         for (auto& cl : m_clientMap)
         {
@@ -268,6 +274,11 @@ void MPDProto::runCommandList(uint32_t aClient)
 
 bool MPDProto::runCommand(uint32_t aClient, uint32_t aCommand)
 {
+    (void)aClient;
+    (void) aCommand;
+
+    // TODO
+
     return false;
 }
 
