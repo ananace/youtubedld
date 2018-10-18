@@ -104,6 +104,10 @@ void Server::run()
         for (auto& prot : m_activeProtocols)
         {
             prot->update();
+            Protocols::Event ev;
+            while (prot->poll(ev))
+            {
+            }
         }
 
         // Update songs / playlists

@@ -26,6 +26,11 @@ enum EventType
 
 struct Event
 {
+    Event()
+        : Type(Event_Invalid)
+    { }
+    ~Event() {}
+
     EventType Type;
     union
     {
