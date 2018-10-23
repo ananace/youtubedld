@@ -35,6 +35,7 @@ set(headers
     Util/Logging.hpp
     Util/Path.hpp
     Util/Tokeniser.hpp
+    Util/WorkQueue.hpp
 )
 
 set(sources
@@ -48,6 +49,7 @@ set(sources
 
     Util/Logging.cpp
     Util/Path.cpp
+    Util/WorkQueue.cpp
 
     main.cpp
 )
