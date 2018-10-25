@@ -72,5 +72,5 @@ public:
     void setSingle(bool aSingle = true);
 
 private:
-    PlayFlags m_playFlags;
+    uint8_t m_playFlags;
 };

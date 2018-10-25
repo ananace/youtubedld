@@ -115,3 +115,44 @@ bool Playlist::saveToFile(const std::string& aPath) const
 
     return false;
 }
+
+void ActivePlaylist::update()
+{
+    Playlist::update();
+
+    // Track song
+}
+
+bool ActivePlaylist::hasRandom() const
+{
+    return (m_playFlags & PF_Random) != 0;
+}
+void ActivePlaylist::setRandom(bool aRandom)
+{
+    if (aRandom)
+        m_playFlags |= uint8_t(PF_Random);
+    else
+        m_playFlags &= uint8_t(~PF_Random);
+}
+bool ActivePlaylist::hasConsume() const
+{
+    return (m_playFlags & PF_Consume) != 0;
+}
+void ActivePlaylist::setConsume(bool aConsume)
+{
+    if (aConsume)
+        m_playFlags |= uint8_t(PF_Consume);
+    else
+        m_playFlags &= uint8_t(~PF_Consume);
+}
+bool ActivePlaylist::hasSingle() const
+{
+    return (m_playFlags & PF_Single) != 0;
+}
+void ActivePlaylist::setSingle(bool aSingle)
+{
+    if (aSingle)
+        m_playFlags |= uint8_t(PF_Single);
+    else
+        m_playFlags &= uint8_t(~PF_Single);
+}
