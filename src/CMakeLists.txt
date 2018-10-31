@@ -2,7 +2,7 @@
 # External dependencies
 # 
 
-
+find_package(gstreamermm REQUIRED)
 
 # 
 # Library name and options
@@ -95,6 +95,7 @@ target_include_directories(${META_PROJECT_NAME}
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${GSTREAMERMM_INCLUDE_DIRS}
 )
 
 
@@ -105,6 +106,7 @@ target_include_directories(${META_PROJECT_NAME}
 target_link_libraries(${META_PROJECT_NAME}
     PRIVATE
     ${DEFAULT_LIBRARIES}
+    ${GSTREAMERMM_LIBRARIES}
 )
 
 
