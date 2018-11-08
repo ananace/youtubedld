@@ -36,6 +36,7 @@ set(headers
     Util/Path.hpp
     Util/Tokeniser.hpp
     Util/WorkQueue.hpp
+    Util/YoutubeDL.hpp
 )
 
 set(sources
@@ -50,6 +51,7 @@ set(sources
     Util/Logging.cpp
     Util/Path.cpp
     Util/WorkQueue.cpp
+    Util/YoutubeDL.cpp
 
     main.cpp
 )

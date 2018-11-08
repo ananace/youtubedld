@@ -1,15 +1,24 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 struct YoutubeDLRequest
 {
+    std::string Url;
 
+    bool ExtractAudio;
+    std::string AudioFormat;
 };
 
 struct YoutubeDLResponse
 {
+    bool Success;
+
+    std::string DownloadUrl;
+    std::string Title;
+    std::unordered_map<std::string, std::string> DownloadHeaders;
 };
 
 class YoutubeDL
@@ -33,10 +42,13 @@ public:
     void install();
     void update();
 
+    bool validRequest(const YoutubeDLRequest& aRequest) const;
+
+    YoutubeDLResponse download(const YoutubeDLRequest& aRequest);
     YoutubeDLResponse request(const YoutubeDLRequest& aRequest);
 
 private:
-    int execute(const std::string& args, std::string& out) const;
+    int execute(const std::string& args, std::string& out);
 
     std::string m_installPath;
 };
