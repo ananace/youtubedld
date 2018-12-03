@@ -20,6 +20,7 @@ message(STATUS "App ${META_PROJECT_NAME}")
 #configure_file(Version.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/${META_PROJECT_NAME}-Version.cpp)
 
 set(headers
+    ActivePlaylist.hpp
     Config.hpp
     Playlist.hpp
     Server.hpp
@@ -40,6 +41,7 @@ set(headers
 )
 
 set(sources
+    ActivePlaylist.cpp
     Config.cpp
     Playlist.cpp
     Server.cpp

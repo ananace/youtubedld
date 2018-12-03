@@ -120,6 +120,7 @@ YoutubeDLResponse YoutubeDL::download(const YoutubeDLRequest& aRequest)
     if (aRequest.Url.empty())
     {
         // TODO
+        return { false };
     }
     else
     {
@@ -152,6 +153,7 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
     if (aRequest.Url.empty())
     {
         // TODO
+        return { false };
     }
     else
     {

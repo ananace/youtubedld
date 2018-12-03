@@ -1,7 +1,10 @@
 #pragma once
 
-#include <vector>
+#include <chrono>
 #include <string>
+#include <vector>
+
+class Server;
 
 class Playlist
 {
@@ -14,7 +17,7 @@ public:
         std::string StreamURL;
         std::string ThumbnailURL;
 
-        uint32_t UpdateTime;
+        std::chrono::system_clock::time_point UpdateTime;
     };
 
     using SongArray = std::vector<Song>;
@@ -48,29 +51,4 @@ public:
 
 private:
     SongArray m_songs;
-};
-
-enum PlayFlags : uint8_t
-{
-    PF_Random  = 1u << 0u,
-    PF_Consume = 1u << 1u,
-    PF_Single  = 1u << 2u,
-};
-
-class ActivePlaylist : public Playlist
-{
-public:
-    ActivePlaylist();
-
-    void update();
-
-    bool hasRandom() const;
-    void setRandom(bool aRandom = true);
-    bool hasConsume() const;
-    void setConsume(bool aConsume = true);
-    bool hasSingle() const;
-    void setSingle(bool aSingle = true);
-
-private:
-    uint8_t m_playFlags;
 };

@@ -3,7 +3,7 @@
 #
 
 # Set a sane minimum version
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 
 # Register general cmake commands
 include(cmake/Custom.cmake)
@@ -18,12 +18,7 @@ set_policy(CMP0063 NEW) # ENABLE CMP0063: Honor visibility properties for all ta
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(GenerateExportHeader)
-
-set(WriterCompilerDetectionHeaderFound NOTFOUND)
-# This module is only available with CMake >=3.1, so check whether it could be found
-if (${CMAKE_VERSION} VERSION_GREATER "3.1")
-    include(WriteCompilerDetectionHeader OPTIONAL RESULT_VARIABLE WriterCompilerDetectionHeaderFound)
-endif()
+include(WriteCompilerDetectionHeader)
 
 # Include custom cmake modules
 include(cmake/GetGitRevisionDescription.cmake)

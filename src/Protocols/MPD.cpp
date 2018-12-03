@@ -25,7 +25,7 @@ struct MPDMessage
     uint32_t Client;
     std::string CommandLine;
     const CommandDefinition* Command;
-    std::vector<string_view> Arguments;
+    std::vector<std::string_view> Arguments;
 };
 
 MPDProto::MPDProto(uint16_t port)
@@ -42,7 +42,7 @@ MPDProto::~MPDProto()
 
 bool MPDProto::init()
 {
-    Util::Log(Util::Log_Debug) << "[MPD] Starting on port " << m_port;
+    Util::Log(Util::Log_Info) << "[MPD] Starting on port " << m_port;
 
     m_socket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -106,8 +106,8 @@ void MPDProto::update()
         tv.tv_usec = 5000;
 
         int ret = select(m_socket + 1, &fds, nullptr, nullptr, &tv);
-        if (ret <= 0)
-            Util::Log(Util::Log_Warning) << "[MPD] select in backlog check returned " << ret;
+        // if (ret <= 0)
+        //     Util::Log(Util::Log_Debug) << "[MPD] select in backlog check returned " << ret;
 
         waiting = FD_ISSET(m_socket, &fds);
 
@@ -213,7 +213,7 @@ void MPDProto::update()
                 auto it = argTokeniser.cbegin();
 
                 auto command = *it++;
-                std::vector<string_view> arguments;
+                std::vector<std::string_view> arguments;
                 std::copy(it, argTokeniser.cend(), std::back_inserter(arguments));
 
                 // Util::Log(Util::Log_Debug) << "Cmd: \"" << std::string(command) << "\"";
@@ -247,8 +247,8 @@ void MPDProto::handleMessage(void* aMessageData)
     if (msg.Command != nullptr)
     {
         std::ostringstream argsString;
-        std::copy(msg.Arguments.begin(), msg.Arguments.end() - 1, std::ostream_iterator<string_view>(argsString, ", "));
-        std::copy(msg.Arguments.end() - 1, msg.Arguments.end(), std::ostream_iterator<string_view>(argsString));
+        std::copy(msg.Arguments.begin(), msg.Arguments.end() - 1, std::ostream_iterator<std::string_view>(argsString, ", "));
+        std::copy(msg.Arguments.end() - 1, msg.Arguments.end(), std::ostream_iterator<std::string_view>(argsString));
 
         Util::Log(Util::Log_Info) << "[MPD] Receieved command from " << msg.Client << ": "
             << msg.Command->Name << "(" << argsString.str() << ")";

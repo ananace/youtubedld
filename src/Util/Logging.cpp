@@ -1,6 +1,8 @@
 #include "Logging.hpp"
 #include "Path.hpp"
 
+#include <iostream>
+
 namespace
 {
 
@@ -36,7 +38,8 @@ Util::LogWrapper Util::Log(LogLevels aLogLevel)
 
 void Util::StdoutLogger::write(const std::string& aMsg) const
 {
-    printf(aMsg.c_str());
+    std::cout << aMsg;
+    std::cout.flush();
 }
 
 Util::FileLogger::FileLogger(const std::string& aPath)

@@ -21,10 +21,10 @@ std::string formatTime(Util::LogLevels aLevel)
     auto time = std::chrono::system_clock::to_time_t(now);
     auto ts = localtime(&time);
     char timeBuf[32];
-    std::strftime(timeBuf, 32, "[ |%H:%M:%S] ", ts);
+    int len = std::strftime(timeBuf, 32, "%H:%M:%S|  ", ts);
 
     static constexpr char LogLevels[] = { 'D', 'I', 'W', 'E' };
-    timeBuf[1] = LogLevels[int(aLevel)];
+    timeBuf[len-2] = LogLevels[int(aLevel)];
     return timeBuf;
 }
 
@@ -32,27 +32,21 @@ std::string formatTime(Util::LogLevels aLevel)
 
 Server::Server()
 {
-    // m_mainLoop = Glib::MainLoop::create();
-    // m_pipeline = Gst::Pipeline::create("audio-player");
-    // m_pipeline->get_bus()->add_watch(sigc::mem_fun(*this, &Server::on_bus_message));
+    auto outputLogger = new Util::StdoutLogger;
+    auto combinedLogger = new Util::CombinedLogger;
+    auto timeLogger = new Util::PrependLogger(combinedLogger);
+
+    combinedLogger->addLogger(outputLogger);
+    timeLogger->setPrepend(formatTime);
+
+    Util::SetLogger(timeLogger);
+    Util::SetLogLevel(Util::Log_Debug);
+
+    m_config.loadDefaults();
 }
 
 void Server::init(int aArgc, const char** aArgv)
 {
-    {
-        auto outputLogger = new Util::StdoutLogger;
-        auto combinedLogger = new Util::CombinedLogger;
-        auto timeLogger = new Util::PrependLogger(combinedLogger);
-
-        combinedLogger->addLogger(outputLogger);
-        timeLogger->setPrepend(formatTime);
-
-        Util::SetLogger(timeLogger);
-    }
-
-    Util::SetLogLevel(Util::Log_Debug);
-
-    m_config.loadDefaults();
     m_config.loadFromArgs(aArgc, aArgv);
 
     m_config.loadFromFile("config.ini");
@@ -65,23 +59,27 @@ void Server::init(int aArgc, const char** aArgv)
 
     Util::Log(Util::Log_Info) << "Loaded conf";
 
-    YoutubeDL ydl;
-    ydl.findInstall();
-    if (!ydl.isAvailable())
-    {
-        Util::Log(Util::Log_Info) << "No YDL found";
-    }
+    // YoutubeDL ydl;
+    // ydl.findInstall();
+    // if (!ydl.isAvailable())
+    // {
+    //     Util::Log(Util::Log_Info) << "No YDL found";
+    // }
 
-    Util::Log(Util::Log_Info) << "YDL version: " << ydl.getVersion();
+    // soup->property("user-agent", resp.DownloadHeaders["User-Agent"]);
 
-    auto resp = ydl.request({ "https://www.youtube.com/watch?v=iL5DY8HVJPE", false, "opus" });
+    // exit(0);
 
-    Util::Log(Util::Log_Info) << "Video is: " << resp.Title << " ( " << resp.DownloadUrl << " ) {";
-    for (auto& hh : resp.DownloadHeaders)
-        Util::Log(Util::Log_Info) << "  " << hh.first << ": " << hh.second;
-    Util::Log(Util::Log_Info) << "}";
+    // Util::Log(Util::Log_Info) << "YDL version: " << ydl.getVersion();
 
-    exit(0);
+    // auto resp = ydl.request({ "https://www.youtube.com/watch?v=iL5DY8HVJPE", false, "opus" });
+
+    // Util::Log(Util::Log_Info) << "Video is: " << resp.Title << " ( " << resp.DownloadUrl << " ) {";
+    // for (auto& hh : resp.DownloadHeaders)
+    //     Util::Log(Util::Log_Info) << "  " << hh.first << ": " << hh.second;
+    // Util::Log(Util::Log_Info) << "}";
+
+    // exit(0);
 
     {
         // Gst::init takes references
@@ -90,33 +88,38 @@ void Server::init(int aArgc, const char** aArgv)
         Gst::init(aArgcTemp, aArgvTemp);
     }
 
-    m_source = Gst::ElementFactory::create_element("filesrc");
-    m_decoder = Gst::ElementFactory::create_element("decodebin");
+    m_mainLoop = Glib::MainLoop::create();
+    m_ticker = Glib::signal_timeout().connect(sigc::mem_fun(*this, &Server::on_tick), 2000);
 
-    m_pipeline->add(m_source)->add(m_decoder);
-    m_source->link(m_decoder);
+    m_activePlaylist.init(*this);
+
+    // m_pipeline = m_activePlaylist.getPipeline();
+    // m_pipeline->get_bus()->add_watch(sigc::mem_fun(*this, &Server::on_bus_message));
+
+    // m_source = Gst::ElementFactory::create_element("souphttpsrc");
+    // m_source->property("automatic-redirect", true);
+    // m_source->property("ssl-strict", false);
 
     // TODO: Plugin-ize
     if (m_config.getValueConv("MPD/Enabled", false))
     {
         uint16_t port = m_config.getValueConv<uint16_t>("MPD/Port", 6600);
         m_activeProtocols.push_back(std::make_unique<Protocols::MPDProto>(port));
-        Util::Log(Util::Log_Info) << "Enabling MPD on port " << port;
+        Util::Log(Util::Log_Debug) << "Enabling MPD on port " << port;
     }
 
     if (m_config.getValueConv("MPRIS/Enabled", false))
     {
         // m_activeProtocols.push_back(std::make_unique<Protocols::MPRIS>());
-        Util::Log(Util::Log_Info) << "Enabling MPRIS";
+        Util::Log(Util::Log_Debug) << "Enabling MPRIS";
     }
 
     if (m_config.getValueConv("REST/Enabled", false))
     {
         uint16_t port = m_config.getValueConv<uint16_t>("REST/Port", 3000);
         // m_activeProtocols.push_back(std::make_unique<Protocols::REST>(port));
-        Util::Log(Util::Log_Info) << "Enabling REST on port " << port;
+        Util::Log(Util::Log_Debug) << "Enabling REST on port " << port;
     }
-
 
     auto removed = std::remove_if(m_activeProtocols.begin(), m_activeProtocols.end(), [](auto& prot) {
         return !prot->init();
@@ -134,49 +137,49 @@ void Server::run()
         return;
     }
 
-    // Glib::signal_timeout().connect(sigc::ptr_fun(), 5);
+    // play("https://freemusicarchive.org/file/music/ccCommunity/Lobo_Loco/Vagabond/Lobo_Loco_-_09_-_Work_Wonders_ID_999.mp3");
 
     m_mainLoop->run();
+    m_activePlaylist.getPipeline()->set_state(Gst::STATE_NULL);
+}
 
-    while(true)
+bool Server::on_tick()
+{
+    // Update protocols
+    for (auto& prot : m_activeProtocols)
     {
-        // Update protocols
-        for (auto& prot : m_activeProtocols)
+        prot->update();
+        Protocols::Event ev;
+        while (prot->poll(ev))
         {
-            prot->update();
-            Protocols::Event ev;
-            while (prot->poll(ev))
-            {
-            }
         }
-
-        // Update songs / playlists
-
-        // Post events
-        for (auto& prot : m_activeProtocols)
-        {
-            if (!prot->supportsPost())
-                continue;
-
-            prot->post();
-        }
-
-        /// TODO: CV and locking instead
-        // std::this_thread::sleep_for(5ms);
     }
+
+    // Post events
+    for (auto& prot : m_activeProtocols)
+    {
+        if (!prot->supportsPost())
+            continue;
+
+        prot->post();
+    }
+
+    return true;
 }
 
 bool Server::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib::RefPtr<Gst::Message>& aMessage)
 {
+    Util::Log(Util::Log_Debug) << "Msg on the bus: " << aMessage->get_structure().get_name().raw();
+
     switch(aMessage->get_message_type())
     {
-    case Gst::MESSAGE_EOS:
-        Util::Log(Util::Log_Info) << "End of stream";
+    case Gst::MESSAGE_ERROR:
+        Util::Log(Util::Log_Error) << "Error: " << Glib::RefPtr<Gst::MessageError>::cast_static(aMessage)->parse_debug();
         m_mainLoop->quit();
         return false;
 
-    case Gst::MESSAGE_ERROR:
-        Util::Log(Util::Log_Error) << "Error." << Glib::RefPtr<Gst::MessageError>::cast_static(aMessage)->parse_debug();
+    case Gst::MESSAGE_WARNING:
+        Util::Log(Util::Log_Warning) << "Warning: " << Glib::RefPtr<Gst::MessageWarning>::cast_static(aMessage)->parse_debug();
         m_mainLoop->quit();
         return false;
 
@@ -186,3 +189,27 @@ bool Server::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib
 
     return true;
 }
+
+// void Server::on_decoder_pad_added(const Glib::RefPtr<Gst::Pad>& aPad)
+// {
+//     Util::Log(Util::Log_Debug) << "Decoder pad added.";
+//     Glib::RefPtr<Gst::Bin> parent = parent.cast_dynamic(aPad->get_parent()->get_parent());
+//     if (!parent)
+//     {
+//         Util::Log(Util::Log_Error) << "Failed to get parent bin";
+//         return;
+//     }
+
+//     Glib::RefPtr<Gst::Element> element = Gst::ElementFactory::create_element("autoaudiosink");
+
+//     try
+//     {
+//         parent->add(element);
+//         element->set_state(Gst::STATE_PLAYING);
+//         aPad->link(element->get_static_pad("sink"));
+//     }
+//     catch (const std::runtime_error& err)
+//     {
+//         Util::Log(Util::Log_Error) << "Failed to add element to a bin: " << err.what();
+//     }
+// }

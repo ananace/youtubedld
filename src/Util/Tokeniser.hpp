@@ -6,10 +6,12 @@
 
 #if __has_include(<string_view>)
 #include <string_view>
-using string_view = std::string_view;
 #else
 #include <experimental/string_view>
-using string_view = std::experimental::string_view;
+namespace std
+{
+    using string_view = std::experimental::string_view;
+}
 #endif
 
 namespace Util
@@ -64,7 +66,7 @@ public:
         void moveToNext()
         {
             auto search = m_data.find_first_of(Delimiter);
-            if (search != string_view::npos)
+            if (search != Source::npos)
             {
                 m_token = m_data.substr(0, search);
                 m_data.remove_prefix(std::min(search + 1, m_data.size()));
@@ -135,8 +137,8 @@ private:
     Source m_data;
 };
 
-using LineTokeniser = Tokeniser<string_view, string_view, '\n'>;
-using CommaTokeniser = Tokeniser<string_view, string_view, ','>;
-using SpaceTokeniser = Tokeniser<string_view, string_view, ' '>;
+using LineTokeniser = Tokeniser<std::string_view, std::string_view, '\n'>;
+using CommaTokeniser = Tokeniser<std::string_view, std::string_view, ','>;
+using SpaceTokeniser = Tokeniser<std::string_view, std::string_view, ' '>;
 
 }

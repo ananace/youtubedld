@@ -1,9 +1,10 @@
 #include "Playlist.hpp"
 #include "Util/Path.hpp"
-// #include "Util/WorkQueue.hpp"
+#include "Util/WorkQueue.hpp"
 
 #include <algorithm>
-#include <chrono>
+
+using namespace std::chrono_literals;
 
 // TODO: Place somewhere more reasonable
 // Util::WorkQueue s_songUpdateQueue;
@@ -68,18 +69,17 @@ void Playlist::removeAllSongs()
 
 void Playlist::update()
 {
-    auto now = std::chrono::system_clock::now().time_since_epoch();
-    auto updateClock = std::chrono::duration_cast<std::chrono::seconds>(now).count();
+    auto now = std::chrono::system_clock::now();
 
     for (auto& it : m_songs)
     {
-        if (it.UpdateTime > updateClock)
+        if (it.UpdateTime > now)
             continue;
 
         // TODO
         // s_songUpdateQueue.queueTask<void>([]() { });
 
-        it.UpdateTime = updateClock + 3600;
+        it.UpdateTime = now + 3600s;
     }
 }
 
@@ -94,9 +94,12 @@ bool Playlist::addFromFile(const std::string& aPath)
 {
     auto path = Util::ExpandPath(aPath);
 
-    // TODO
+    auto toAdd = Playlist();
+    if (!toAdd.loadFromFile(aPath))
+        return false;
 
-    return false;
+    addFromPlaylist(toAdd);
+    return true;
 }
 
 bool Playlist::loadFromFile(const std::string& aPath)
@@ -114,45 +117,4 @@ bool Playlist::saveToFile(const std::string& aPath) const
     // TODO
 
     return false;
-}
-
-void ActivePlaylist::update()
-{
-    Playlist::update();
-
-    // Track song
-}
-
-bool ActivePlaylist::hasRandom() const
-{
-    return (m_playFlags & PF_Random) != 0;
-}
-void ActivePlaylist::setRandom(bool aRandom)
-{
-    if (aRandom)
-        m_playFlags |= uint8_t(PF_Random);
-    else
-        m_playFlags &= uint8_t(~PF_Random);
-}
-bool ActivePlaylist::hasConsume() const
-{
-    return (m_playFlags & PF_Consume) != 0;
-}
-void ActivePlaylist::setConsume(bool aConsume)
-{
-    if (aConsume)
-        m_playFlags |= uint8_t(PF_Consume);
-    else
-        m_playFlags &= uint8_t(~PF_Consume);
-}
-bool ActivePlaylist::hasSingle() const
-{
-    return (m_playFlags & PF_Single) != 0;
-}
-void ActivePlaylist::setSingle(bool aSingle)
-{
-    if (aSingle)
-        m_playFlags |= uint8_t(PF_Single);
-    else
-        m_playFlags &= uint8_t(~PF_Single);
 }
