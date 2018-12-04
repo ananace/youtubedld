@@ -1,6 +1,7 @@
 #include "ActivePlaylist.hpp"
 #include "Server.hpp"
 #include "Util/GObjectSignalWrapper.hpp"
+#include "Util/Logging.hpp"
 
 ActivePlaylist::ActivePlaylist()
     : m_server(nullptr)
@@ -14,12 +15,16 @@ void ActivePlaylist::init(Server& aServer)
     m_server = &aServer;
 
     m_playbin = Gst::ElementFactory::create_element("playbin");
+    // TODO: Allow configuring
     m_playbin->property("video-sink", Gst::ElementFactory::create_element("fakesink"));
 
     m_playbin->get_bus()->add_watch(sigc::mem_fun(*this, &ActivePlaylist::on_bus_message));
 
-    signal_callback<void(const Glib::RefPtr<Gst::Bin>&)> signal_wrapper;
+    signal_callback<void(const Glib::RefPtr<Gst::Bin>&, const Glib::RefPtr<Gst::Bin>&, void*)> signal_wrapper;
     signal_wrapper("about-to-finish", m_playbin).connect(sigc::mem_fun(*this, &ActivePlaylist::on_about_to_finish));
+
+    signal_callback<void(const Glib::RefPtr<Gst::Bin>&, const Glib::RefPtr<Gst::Element>&, void*)> source_setup_wrapper;
+    source_setup_wrapper("source-setup", m_playbin).connect(sigc::mem_fun(*this, &ActivePlaylist::on_source_setup));
 }
 
 void ActivePlaylist::update()
@@ -138,7 +143,7 @@ void ActivePlaylist::setSingle(bool aSingle)
         m_playFlags &= uint8_t(~PF_Single);
 }
 
-bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage)
+bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib::RefPtr<Gst::Message>& aMessage)
 {
     switch(aMessage->get_message_type())
     {
@@ -180,6 +185,17 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Gl
     return true;
 }
 
-void ActivePlaylist::on_about_to_finish(const Glib::RefPtr<Gst::Bin>& aBin)
+void ActivePlaylist::on_about_to_finish(const Glib::RefPtr<Gst::Bin>& /* aPipeline */, const Glib::RefPtr<Gst::Bin>& aBin, void* /* aUserData */)
 {
+    (void)aBin;
+}
+
+void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Bin>& /* aPipeline */, const Glib::RefPtr<Gst::Element>& aSource, void* /* aUserData */)
+{
+    Util::Log(Util::Log_Debug) << "Setting up source of type " << aSource->get_name().raw();
+    if (aSource->get_name().raw() == "souphttpsrc")
+    {
+        aSource->property("automatic-redirect", true);
+        aSource->property("ssl-strict", false);
+    }
 }

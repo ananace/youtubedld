@@ -189,27 +189,3 @@ bool Server::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib
 
     return true;
 }
-
-// void Server::on_decoder_pad_added(const Glib::RefPtr<Gst::Pad>& aPad)
-// {
-//     Util::Log(Util::Log_Debug) << "Decoder pad added.";
-//     Glib::RefPtr<Gst::Bin> parent = parent.cast_dynamic(aPad->get_parent()->get_parent());
-//     if (!parent)
-//     {
-//         Util::Log(Util::Log_Error) << "Failed to get parent bin";
-//         return;
-//     }
-
-//     Glib::RefPtr<Gst::Element> element = Gst::ElementFactory::create_element("autoaudiosink");
-
-//     try
-//     {
-//         parent->add(element);
-//         element->set_state(Gst::STATE_PLAYING);
-//         aPad->link(element->get_static_pad("sink"));
-//     }
-//     catch (const std::runtime_error& err)
-//     {
-//         Util::Log(Util::Log_Error) << "Failed to add element to a bin: " << err.what();
-//     }
-// }

@@ -33,6 +33,7 @@ set(headers
     Protocols/Base/Event.hpp
     Protocols/MPD/Commands.hpp
 
+    Util/GObjectSignalWrapper.hpp
     Util/Logging.hpp
     Util/Path.hpp
     Util/Tokeniser.hpp

@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class Server;
@@ -12,10 +13,11 @@ public:
     struct Song
     {
         std::string URL;
-
-        std::string Title;
         std::string StreamURL;
         std::string ThumbnailURL;
+
+        std::string Title;
+        std::unordered_map<std::string, std::string> Tags;
 
         std::chrono::system_clock::time_point UpdateTime;
     };
