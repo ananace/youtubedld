@@ -2,12 +2,28 @@
 #include "Util/Path.hpp"
 #include "Util/WorkQueue.hpp"
 
+#if __has_include(<string_view>)
+#include <string_view>
+#else
+#include <experimental/string_view>
+namespace std
+{
+    using string_view = std::experimental::string_view;
+}
+#endif
+
 #include <algorithm>
 
 using namespace std::chrono_literals;
 
 // TODO: Place somewhere more reasonable
 // Util::WorkQueue s_songUpdateQueue;
+
+bool Playlist::Song::isLocal() const
+{
+    std::string_view urlView = URL;
+    return urlView.find("file://") == 0 || urlView.find("://") == std::string::npos;
+}
 
 Playlist::Playlist()
 {
@@ -41,7 +57,7 @@ size_t Playlist::size() const
 bool Playlist::hasSong(const std::string& aSearch) const
 {
     return std::find_if(cbegin(), cend(), [aSearch](auto& it) {
-        return it.URL == aSearch || it.Title == aSearch || it.StreamURL == aSearch;
+        return it.URL == aSearch || it.Title == aSearch;
     }) != cend();
 }
 void Playlist::addSong(const std::string& aUrl)
@@ -51,7 +67,7 @@ void Playlist::addSong(const std::string& aUrl)
 void Playlist::removeSong(const std::string& aSearch)
 {
     auto it = std::find_if(cbegin(), cend(), [aSearch](auto& it) {
-        return it.URL == aSearch || it.Title == aSearch || it.StreamURL == aSearch;
+        return it.URL == aSearch || it.Title == aSearch;
     });
 
     if (it != cend())
@@ -76,10 +92,19 @@ void Playlist::update()
         if (it.UpdateTime > now)
             continue;
 
-        // TODO
-        // s_songUpdateQueue.queueTask<void>([]() { });
+        if (!it.isLocal())
+        {
+            // TODO
+            // s_songUpdateQueue.queueTask<void>([]() { });
 
-        it.UpdateTime = now + 3600s;
+            it.UpdateTime = now + 3600s;
+        }
+        else
+        {
+            it.DataURL = it.URL; // TODO: "file://"
+
+            it.UpdateTime = now + 24h;
+        }
     }
 }
 

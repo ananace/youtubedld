@@ -13,13 +13,17 @@ public:
     struct Song
     {
         std::string URL;
-        std::string StreamURL;
+
+        std::string DataURL;
         std::string ThumbnailURL;
 
         std::string Title;
         std::unordered_map<std::string, std::string> Tags;
 
+        std::chrono::nanoseconds Duration;
         std::chrono::system_clock::time_point UpdateTime;
+
+        bool isLocal() const;
     };
 
     using SongArray = std::vector<Song>;
@@ -51,6 +55,6 @@ public:
     bool loadFromFile(const std::string& aPath);
     bool saveToFile(const std::string& aPath) const;
 
-private:
+protected:
     SongArray m_songs;
 };

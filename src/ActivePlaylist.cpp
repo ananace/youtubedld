@@ -143,6 +143,28 @@ void ActivePlaylist::setSingle(bool aSingle)
         m_playFlags &= uint8_t(~PF_Single);
 }
 
+bool ActivePlaylist::changeSong(SongArray::const_iterator aSong, int aState)
+{
+    if (m_currentSong != m_songs.cend())
+    {
+        SongArray::iterator curSong = m_songs.erase(m_currentSong, m_currentSong);
+
+        // Refresh stream URL if song is not local
+        if (!curSong->isLocal())
+            curSong->UpdateTime = std::chrono::system_clock::now();
+    }
+
+    m_currentSong = aSong;
+
+    if (m_currentSong != m_songs.cend())
+    {
+        if (m_currentSong->UpdateTime >= std::chrono::system_clock::now())
+            return; // Force retest?
+
+        m_playbin->property("url", m_currentSong->DataURL);
+    }
+}
+
 bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib::RefPtr<Gst::Message>& aMessage)
 {
     switch(aMessage->get_message_type())
@@ -174,7 +196,7 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
         {
             auto tag = Glib::RefPtr<Gst::MessageTag>::cast_static(aMessage);
 
-
+            // tag->
         }
         break;
 
@@ -188,6 +210,10 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
 void ActivePlaylist::on_about_to_finish(const Glib::RefPtr<Gst::Bin>& /* aPipeline */, const Glib::RefPtr<Gst::Bin>& aBin, void* /* aUserData */)
 {
     (void)aBin;
+    Util::Log(Util::Log_Debug) << "About to finish current stream, calling next.";
+
+    if (!hasSingle())
+        next();
 }
 
 void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Bin>& /* aPipeline */, const Glib::RefPtr<Gst::Element>& aSource, void* /* aUserData */)

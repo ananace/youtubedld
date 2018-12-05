@@ -39,7 +39,7 @@ public:
     void setSingle(bool aSingle = true);
 
 private:
-    bool changeSong(int aSong, int aState);
+    bool changeSong(SongArray::const_iterator aSong, int aState);
 
     bool on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage);
     void on_about_to_finish(const Glib::RefPtr<Gst::Bin>& aSelf, const Glib::RefPtr<Gst::Bin>& aBin, void*);
