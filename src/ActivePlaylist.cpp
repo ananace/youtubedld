@@ -159,10 +159,12 @@ bool ActivePlaylist::changeSong(SongArray::const_iterator aSong, int aState)
     if (m_currentSong != m_songs.cend())
     {
         if (m_currentSong->UpdateTime >= std::chrono::system_clock::now())
-            return; // Force retest?
+            return false; // Force retest?
 
         m_playbin->property("url", m_currentSong->DataURL);
     }
+
+    return true;
 }
 
 bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib::RefPtr<Gst::Message>& aMessage)
@@ -194,9 +196,25 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
 
     case Gst::MESSAGE_TAG:
         {
-            auto tag = Glib::RefPtr<Gst::MessageTag>::cast_static(aMessage);
+            auto tagMsg = Glib::RefPtr<Gst::MessageTag>::cast_static(aMessage);
+            auto tagList = tagMsg->parse_tag_list();
 
-            // tag->
+            SongArray::iterator curSong = m_songs.erase(m_currentSong, m_currentSong);
+
+            Glib::ustring ustr;
+            uint64_t u64;
+
+            if (tagList.get(Gst::TAG_TITLE, ustr))
+                curSong->Title = ustr.raw();
+
+            if (tagList.get(Gst::TAG_ARTIST, ustr))
+                curSong->Tags["ARTIST"] = ustr.raw();
+
+            if (tagList.get(Gst::TAG_ALBUM, ustr))
+                curSong->Tags["ALBUM"] = ustr.raw();
+
+            if (tagList.get(Gst::TAG_DURATION, u64) && curSong->Duration.count() < u64)
+                curSong->Duration = std::chrono::nanoseconds(u64);
         }
         break;
 
