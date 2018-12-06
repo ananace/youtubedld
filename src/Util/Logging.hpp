@@ -1,8 +1,14 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
+
+namespace std
+{
+    std::string to_string(std::chrono::nanoseconds input);
+}
 
 namespace Util
 {

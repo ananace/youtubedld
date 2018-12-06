@@ -229,7 +229,7 @@ bool Config::getValueConv<bool>(const std::string& aPath) const
     auto data = getValue(aPath);
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
 
-    return data == "true" || data == "on" || data == "1";
+    return data == "true" || data == "t" || data == "on" || data == "yes" || data == "y" || data == "1";
 }
 
 template<>

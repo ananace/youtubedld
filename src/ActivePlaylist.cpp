@@ -15,20 +15,28 @@ void ActivePlaylist::init(Server& aServer)
     m_server = &aServer;
 
     m_playbin = Gst::ElementFactory::create_element("playbin");
-    // TODO: Allow configuring
+
     int flags;
     m_playbin->get_property("flags", flags);
+
     flags |= Gst::PLAY_FLAG_AUDIO;
+
+    // TODO: Allow configuring
     flags &= ~Gst::PLAY_FLAG_VIDEO;
+
+    if (m_server->getConfig().getValueConv("Cache/Enabled", false))
+        flags |= Gst::PLAY_FLAG_DOWNLOAD;
+    if (m_server->getConfig().hasValue("Cache/MaxSize"))
+        m_playbin->set_property("ring-buffer-max-size", m_server->getConfig().getValueConv<uint64_t>("Cache/MaxSize"));
+
     m_playbin->set_property("flags", flags);
-    m_playbin->set_property("video-sink", Gst::ElementFactory::create_element("fakesink"));
 
     m_playbin->get_bus()->add_watch(sigc::mem_fun(*this, &ActivePlaylist::on_bus_message));
 
-    signal_callback<void(const Glib::RefPtr<Gst::Bin>&, const Glib::RefPtr<Gst::Bin>&, void*)> signal_wrapper;
+    signal_callback<void()> signal_wrapper;
     signal_wrapper("about-to-finish", m_playbin).connect(sigc::mem_fun(*this, &ActivePlaylist::on_about_to_finish));
 
-    signal_callback<void(const Glib::RefPtr<Gst::Bin>&, const Glib::RefPtr<Gst::Element>&, void*)> source_setup_wrapper;
+    signal_callback<void(const Glib::RefPtr<Gst::Element>&)> source_setup_wrapper;
     source_setup_wrapper("source-setup", m_playbin).connect(sigc::mem_fun(*this, &ActivePlaylist::on_source_setup));
 }
 
@@ -56,16 +64,24 @@ Glib::RefPtr<Gst::Element> ActivePlaylist::getPipeline() const
 
 void ActivePlaylist::play()
 {
+    Util::Log(Util::Log_Debug) << "Play()";
+
     Gst::State state, pending;
     m_playbin->get_state(state, pending, {});
 
     if (state == Gst::STATE_PLAYING)
+    {
+        changeSong(m_currentSong, Gst::STATE_PLAYING);
         return;
+    }
 
-    m_playbin->set_state(Gst::STATE_PLAYING);
+    changeSong(&m_songs.front(), Gst::STATE_PLAYING);
+
 }
 void ActivePlaylist::stop()
 {
+    Util::Log(Util::Log_Debug) << "Stop()";
+
     Gst::State state, pending;
     m_playbin->get_state(state, pending, {});
 
@@ -96,7 +112,22 @@ void ActivePlaylist::resume()
 }
 void ActivePlaylist::next()
 {
+    auto it = std::find_if(m_songs.begin(), m_songs.end(), [this](auto& song) { return &song == m_currentSong; });
+    if (it == m_songs.end() || ++it == m_songs.end())
+    {
+        if (!hasRepeat() && !hasRandom())
+            return stop();
 
+        if (hasRandom())
+        {
+            // TODO
+            it = m_songs.begin();
+        }
+        else
+            it = m_songs.begin();
+    }
+
+    changeSong(&(*it), Gst::STATE_PLAYING);
 }
 void ActivePlaylist::previous()
 {
@@ -148,25 +179,48 @@ void ActivePlaylist::setSingle(bool aSingle)
         m_playFlags &= uint8_t(~PF_Single);
 }
 
-bool ActivePlaylist::changeSong(SongArray::const_iterator aSong, int aState)
+bool ActivePlaylist::isLive() const
 {
-    if (m_currentSong != m_songs.cend())
+    return (m_playFlags & PF_Live) != 0;
+}
+
+bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
+{
+    Util::Log(Util::Log_Debug) << "ChangeSong(" << aSong->URL << ", " << aState << ")";
+
+    if (m_currentSong)
     {
-        SongArray::iterator curSong = m_songs.erase(m_currentSong, m_currentSong);
+        Util::Log(Util::Log_Debug) << "- resetting current song (" << m_currentSong->URL << ")";
 
         // Refresh stream URL if song is not local
-        if (!curSong->isLocal())
-            curSong->UpdateTime = std::chrono::system_clock::now();
+        if (!m_currentSong->isLocal())
+            m_currentSong->UpdateTime = std::chrono::system_clock::now();
     }
 
     m_currentSong = aSong;
 
-    if (m_currentSong != m_songs.cend())
+    if (m_currentSong)
     {
-        if (m_currentSong->UpdateTime >= std::chrono::system_clock::now())
-            return false; // Force retest?
+        Util::Log(Util::Log_Debug) << "- setting up new song";
+        // if (m_currentSong->UpdateTime >= std::chrono::system_clock::now())
+        //     return false; // Force retest?
 
-        m_playbin->property("url", m_currentSong->DataURL);
+        auto uri = m_currentSong->DataURL;
+        if (uri.empty())
+            uri = m_currentSong->URL;
+
+        m_playbin->property("uri", Glib::ustring(uri));
+    }
+
+    auto ret = m_playbin->set_state(aState);
+    if (ret == Gst::STATE_CHANGE_NO_PREROLL)
+        m_playFlags |= PF_Live;
+    else
+        m_playFlags &= ~PF_Live;
+
+    if (ret == Gst::STATE_CHANGE_FAILURE)
+    {
+        Util::Log(Util::Log_Error) << "Failed to play song";
     }
 
     return true;
@@ -178,9 +232,13 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
     {
     case Gst::MESSAGE_BUFFERING:
         {
+            if (isLive())
+                break;
+
             auto buf = Glib::RefPtr<Gst::MessageBuffering>::cast_static(aMessage);
 
             int perc = buf->parse_buffering();
+            Util::Log(Util::Log_Debug) << "Buffering: " << perc << "%";
 
             if (perc >= 100)
                 m_playbin->set_state(Gst::STATE_PLAYING);
@@ -196,6 +254,15 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
 
             if (m_playbin->query_duration(fmt, dur))
                 m_currentSongDur = std::chrono::nanoseconds(dur);
+
+            Util::Log(Util::Log_Debug) << "Duration change: " << m_currentSongDur;
+        }
+        break;
+
+    case Gst::MESSAGE_CLOCK_LOST:
+        {
+            m_playbin->set_state(Gst::STATE_PAUSED);
+            m_playbin->set_state(Gst::STATE_PLAYING);
         }
         break;
 
@@ -204,45 +271,63 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
             auto tagMsg = Glib::RefPtr<Gst::MessageTag>::cast_static(aMessage);
             auto tagList = tagMsg->parse_tag_list();
 
-            SongArray::iterator curSong = m_songs.erase(m_currentSong, m_currentSong);
-
             Glib::ustring ustr;
             uint64_t u64;
 
             if (tagList.get(Gst::TAG_TITLE, ustr))
-                curSong->Title = ustr.raw();
+                m_currentSong->Title = ustr.raw();
 
             if (tagList.get(Gst::TAG_ARTIST, ustr))
-                curSong->Tags["ARTIST"] = ustr.raw();
+                m_currentSong->Tags["ARTIST"] = ustr.raw();
 
             if (tagList.get(Gst::TAG_ALBUM, ustr))
-                curSong->Tags["ALBUM"] = ustr.raw();
+                m_currentSong->Tags["ALBUM"] = ustr.raw();
 
-            if (tagList.get(Gst::TAG_DURATION, u64) && curSong->Duration.count() < u64)
-                curSong->Duration = std::chrono::nanoseconds(u64);
+            if (tagList.get(Gst::TAG_DURATION, u64) && m_currentSong->Duration.count() < u64)
+                m_currentSong->Duration = std::chrono::nanoseconds(u64);
         }
         break;
 
+    case Gst::MESSAGE_ERROR:
+        {
+            auto errMsg = Glib::RefPtr<Gst::MessageError>::cast_static(aMessage);
+
+            Util::Log(Util::Log_Error) << "Error: " << errMsg->parse_error().what().raw();
+            Util::Log(Util::Log_Error) << errMsg->parse_debug();
+        }
+        return false;
+
+    case Gst::MESSAGE_WARNING:
+        {
+            auto warnMsg = Glib::RefPtr<Gst::MessageWarning>::cast_static(aMessage);
+
+            Util::Log(Util::Log_Warning) << "Warning: " << warnMsg->parse_error().what().raw();
+            Util::Log(Util::Log_Warning) << warnMsg->parse_debug();
+        }
+        return false;
+
+
     default:
+        Util::Log(Util::Log_Debug) << "Unhandled Msg on the bus: " << aMessage->get_structure().get_name().raw();
         break;
     }
 
     return true;
 }
 
-void ActivePlaylist::on_about_to_finish(const Glib::RefPtr<Gst::Bin>& /* aPipeline */, const Glib::RefPtr<Gst::Bin>& aBin, void* /* aUserData */)
+void ActivePlaylist::on_about_to_finish()
 {
-    (void)aBin;
     Util::Log(Util::Log_Debug) << "About to finish current stream, calling next.";
 
     if (!hasSingle())
         next();
 }
 
-void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Bin>& /* aPipeline */, const Glib::RefPtr<Gst::Element>& aSource, void* /* aUserData */)
+void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Element>& aSource)
 {
     Util::Log(Util::Log_Debug) << "Setting up source of type " << aSource->get_name().raw();
-    if (aSource->get_name().raw() == "souphttpsrc")
+
+    // if (aSource->get_name().raw() == "souphttpsrc")
     {
         aSource->property("automatic-redirect", true);
         aSource->property("ssl-strict", false);

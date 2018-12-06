@@ -1,6 +1,7 @@
 #include "Logging.hpp"
 #include "Path.hpp"
 
+#include <iomanip>
 #include <iostream>
 
 namespace
@@ -10,6 +11,51 @@ Util::NullLogger sNullLogger;
 std::unique_ptr<Util::Logger> sLogger;
 Util::LogLevels sLogLevel = Util::Log_Info;
 
+}
+
+std::string std::to_string(std::chrono::nanoseconds input)
+{
+    using namespace std::chrono;
+    typedef duration<int, std::ratio<86400>> days;
+    auto d = duration_cast<days>(input);
+    input -= d;
+    auto h = duration_cast<hours>(input);
+    input -= h;
+    auto m = duration_cast<minutes>(input);
+    input -= m;
+    auto s = duration_cast<seconds>(input);
+    input -= s;
+    auto ms = duration_cast<milliseconds>(input);
+
+    auto dc = d.count();
+    auto hc = h.count();
+    auto mc = m.count();
+    auto sc = s.count();
+    auto msc = ms.count();
+
+    std::stringstream ss;
+    ss.fill('0');
+    if (dc) {
+        ss << d.count();
+    }
+    if (dc || hc) {
+        if (dc) { ss << ':' << std::setw(2); } //pad if second set of numbers
+        ss << h.count();
+    }
+    if (dc || hc || mc) {
+        if (dc || hc) { ss << ':' << std::setw(2); }
+        ss << m.count();
+    }
+    if (dc || hc || mc || sc) {
+        if (dc || hc || mc) { ss << ':' << std::setw(2); }
+        ss << s.count();
+    }
+    if (dc || hc || mc || sc || msc) {
+        if (dc || hc || mc || sc) { ss << '.' << std::setw(2); }
+        ss << ms.count();
+    }
+
+    return ss.str();
 }
 
 Util::LogLevels Util::GetLogLevel()

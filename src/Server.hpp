@@ -20,6 +20,9 @@ public:
 
     void play(const std::string& aMusic);
 
+    const Config& getConfig() const noexcept { return m_config; }
+    Config& getConfig() noexcept { return m_config; }
+
 private:
     bool on_tick();
     bool on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage);
@@ -30,5 +33,7 @@ private:
     ActivePlaylist m_activePlaylist;
 
     sigc::connection m_ticker;
+
+    Glib::RefPtr<Gst::Element> m_pipeline;
     Glib::RefPtr<Glib::MainLoop> m_mainLoop;
 };

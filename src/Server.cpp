@@ -93,8 +93,8 @@ void Server::init(int aArgc, const char** aArgv)
 
     m_activePlaylist.init(*this);
 
-    // m_pipeline = m_activePlaylist.getPipeline();
-    // m_pipeline->get_bus()->add_watch(sigc::mem_fun(*this, &Server::on_bus_message));
+    m_pipeline = m_activePlaylist.getPipeline();
+    m_pipeline->get_bus()->add_watch(sigc::mem_fun(*this, &Server::on_bus_message));
 
     // m_source = Gst::ElementFactory::create_element("souphttpsrc");
     // m_source->property("automatic-redirect", true);
@@ -137,6 +137,10 @@ void Server::run()
         return;
     }
 
+    m_activePlaylist.addSong("https://freesound.org/data/previews/449/449728_4068345-lq.mp3");
+    m_activePlaylist.addSong("https://freemusicarchive.org/file/music/ccCommunity/Lobo_Loco/Vagabond/Lobo_Loco_-_09_-_Work_Wonders_ID_999.mp3");
+    m_activePlaylist.play();
+
     // play("https://freemusicarchive.org/file/music/ccCommunity/Lobo_Loco/Vagabond/Lobo_Loco_-_09_-_Work_Wonders_ID_999.mp3");
 
     m_mainLoop->run();
@@ -174,13 +178,21 @@ bool Server::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib
     switch(aMessage->get_message_type())
     {
     case Gst::MESSAGE_ERROR:
-        Util::Log(Util::Log_Error) << "Error: " << Glib::RefPtr<Gst::MessageError>::cast_static(aMessage)->parse_debug();
-        m_mainLoop->quit();
+        {
+            auto errMsg = Glib::RefPtr<Gst::MessageError>::cast_static(aMessage);
+
+            Util::Log(Util::Log_Error) << "Error: " << errMsg->parse_error().what().raw();
+            Util::Log(Util::Log_Error) << errMsg->parse_debug();
+        }
         return false;
 
     case Gst::MESSAGE_WARNING:
-        Util::Log(Util::Log_Warning) << "Warning: " << Glib::RefPtr<Gst::MessageWarning>::cast_static(aMessage)->parse_debug();
-        m_mainLoop->quit();
+        {
+            auto warnMsg = Glib::RefPtr<Gst::MessageWarning>::cast_static(aMessage);
+
+            Util::Log(Util::Log_Warning) << "Warning: " << warnMsg->parse_error().what().raw();
+            Util::Log(Util::Log_Warning) << warnMsg->parse_debug();
+        }
         return false;
 
     default:

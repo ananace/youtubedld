@@ -10,6 +10,8 @@ enum PlayFlags : uint8_t
     PF_Random  = 1u << 1u,
     PF_Repeat  = 1u << 2u,
     PF_Single  = 1u << 3u,
+
+    PF_Live    = 1u << 4u,
 };
 
 class ActivePlaylist : public Playlist
@@ -38,17 +40,19 @@ public:
     bool hasSingle() const;
     void setSingle(bool aSingle = true);
 
+    bool isLive() const;
+
 private:
-    bool changeSong(SongArray::const_iterator aSong, int aState);
+    bool changeSong(Song* aSong, Gst::State aState);
 
     bool on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage);
-    void on_about_to_finish(const Glib::RefPtr<Gst::Bin>& aSelf, const Glib::RefPtr<Gst::Bin>& aBin, void*);
-    void on_source_setup(const Glib::RefPtr<Gst::Bin>& aSelf, const Glib::RefPtr<Gst::Element>& aSource, void*);
+    void on_about_to_finish();
+    void on_source_setup(const Glib::RefPtr<Gst::Element>& aSource);
 
     Server* m_server;
     Glib::RefPtr<Gst::Element> m_playbin;
 
     uint8_t m_playFlags;
-    SongArray::const_iterator m_currentSong;
+    Song* m_currentSong;
     std::chrono::nanoseconds m_currentSongDur, m_currentSongPos;
 };
