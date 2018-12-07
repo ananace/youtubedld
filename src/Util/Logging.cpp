@@ -55,6 +55,9 @@ std::string std::to_string(std::chrono::nanoseconds input)
         ss << ms.count();
     }
 
+    if (!dc && !hc && !mc && !sc && !msc)
+        ss << "null";
+
     return ss.str();
 }
 

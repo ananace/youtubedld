@@ -259,8 +259,18 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
         }
         break;
 
+    case Gst::MESSAGE_STATE_CHANGED:
+        {
+            Gst::State oldState, newState, pendingState;
+            Glib::RefPtr<Gst::MessageStateChanged>::cast_static(aMessage)->parse(oldState, newState, pendingState);
+
+            // Util::Log(Util::Log_Debug) << "State change " << oldState << " -> " << newState << " (-> " << pendingState << ")";
+        }
+        break;
+
     case Gst::MESSAGE_CLOCK_LOST:
         {
+            Util::Log(Util::Log_Debug) << "Resetting clock";
             m_playbin->set_state(Gst::STATE_PAUSED);
             m_playbin->set_state(Gst::STATE_PLAYING);
         }
@@ -295,7 +305,7 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
             Util::Log(Util::Log_Error) << "Error: " << errMsg->parse_error().what().raw();
             Util::Log(Util::Log_Error) << errMsg->parse_debug();
         }
-        return false;
+        break;
 
     case Gst::MESSAGE_WARNING:
         {
@@ -304,11 +314,16 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
             Util::Log(Util::Log_Warning) << "Warning: " << warnMsg->parse_error().what().raw();
             Util::Log(Util::Log_Warning) << warnMsg->parse_debug();
         }
-        return false;
+        break;
 
 
     default:
-        Util::Log(Util::Log_Debug) << "Unhandled Msg on the bus: " << aMessage->get_structure().get_name().raw();
+        {
+            auto structure = aMessage->get_structure();
+
+            if (structure)
+                Util::Log(Util::Log_Debug) << "Unhandled Msg on the bus: " << structure.get_name().raw();
+        }
         break;
     }
 
@@ -319,7 +334,9 @@ void ActivePlaylist::on_about_to_finish()
 {
     Util::Log(Util::Log_Debug) << "About to finish current stream, calling next.";
 
-    if (!hasSingle())
+    if (hasSingle())
+        stop();
+    else
         next();
 }
 
@@ -329,7 +346,7 @@ void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Element>& aSource)
 
     // if (aSource->get_name().raw() == "souphttpsrc")
     {
-        aSource->property("automatic-redirect", true);
-        aSource->property("ssl-strict", false);
+        aSource->set_property("automatic-redirect", true);
+        aSource->set_property("ssl-strict", false);
     }
 }
