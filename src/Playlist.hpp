@@ -23,6 +23,9 @@ public:
         std::chrono::nanoseconds Duration;
         std::chrono::system_clock::time_point UpdateTime;
 
+        bool Direct;
+
+        bool isDirect() const;
         bool isLocal() const;
     };
 

@@ -19,10 +19,15 @@ using namespace std::chrono_literals;
 // TODO: Place somewhere more reasonable
 // Util::WorkQueue s_songUpdateQueue;
 
+bool Playlist::Song::isDirect() const
+{
+    return isLocal() || Direct;
+}
+
 bool Playlist::Song::isLocal() const
 {
     std::string_view urlView = URL;
-    return urlView.find("file://") == 0 || urlView.find("://") == std::string::npos;
+    return urlView[0] == '/' || urlView.find("file://") == 0 || urlView.find("://") == std::string::npos;
 }
 
 Playlist::Playlist()
@@ -62,7 +67,22 @@ bool Playlist::hasSong(const std::string& aSearch) const
 }
 void Playlist::addSong(const std::string& aUrl)
 {
+    // TODO: Initial update
     m_songs.push_back({ aUrl });
+    auto& added = m_songs.back();
+
+    if (added.isLocal())
+    {
+        if (std::string_view(added.URL).find("file://") == std::string_view::npos)
+            added.URL = "file://" + added.URL;
+
+        added.DataURL = added.URL;
+        added.UpdateTime = std::chrono::system_clock::now() + 24h;
+    }
+    else
+    {
+        // s_songUpdateQueue.queueTask<void>([]() { });
+    }
 }
 void Playlist::removeSong(const std::string& aSearch)
 {
@@ -92,7 +112,7 @@ void Playlist::update()
         if (it.UpdateTime > now)
             continue;
 
-        if (!it.isLocal())
+        if (!it.isDirect())
         {
             // TODO
             // s_songUpdateQueue.queueTask<void>([]() { });
@@ -100,11 +120,7 @@ void Playlist::update()
             it.UpdateTime = now + 3600s;
         }
         else
-        {
-            it.DataURL = it.URL; // TODO: "file://"
-
             it.UpdateTime = now + 24h;
-        }
     }
 }
 

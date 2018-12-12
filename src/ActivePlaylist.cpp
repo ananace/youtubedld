@@ -3,6 +3,8 @@
 #include "Util/GObjectSignalWrapper.hpp"
 #include "Util/Logging.hpp"
 
+#include <random>
+
 ActivePlaylist::ActivePlaylist()
     : m_server(nullptr)
     , m_playFlags(0)
@@ -112,22 +114,7 @@ void ActivePlaylist::resume()
 }
 void ActivePlaylist::next()
 {
-    auto it = std::find_if(m_songs.begin(), m_songs.end(), [this](auto& song) { return &song == m_currentSong; });
-    if (it == m_songs.end() || ++it == m_songs.end())
-    {
-        if (!hasRepeat() && !hasRandom())
-            return stop();
-
-        if (hasRandom())
-        {
-            // TODO
-            it = m_songs.begin();
-        }
-        else
-            it = m_songs.begin();
-    }
-
-    changeSong(&(*it), Gst::STATE_PLAYING);
+    changeSong(nextSong(m_currentSong), Gst::STATE_PLAYING);
 }
 void ActivePlaylist::previous()
 {
@@ -192,8 +179,14 @@ bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
     {
         Util::Log(Util::Log_Debug) << "- resetting current song (" << m_currentSong->URL << ")";
 
+        if (hasConsume())
+        {
+            m_songs.erase(std::find_if(m_songs.begin(), m_songs.end(), [this](auto& it) { return m_currentSong == &it; }));
+            if (m_songs.empty())
+                m_currentSong = nullptr;
+        }
         // Refresh stream URL if song is not local
-        if (!m_currentSong->isLocal())
+        else if (!m_currentSong->isLocal())
             m_currentSong->UpdateTime = std::chrono::system_clock::now();
     }
 
@@ -201,7 +194,7 @@ bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
 
     if (m_currentSong)
     {
-        Util::Log(Util::Log_Debug) << "- setting up new song";
+        Util::Log(Util::Log_Debug) << "- setting up new song (" << m_currentSong->URL << ")";
         // if (m_currentSong->UpdateTime >= std::chrono::system_clock::now())
         //     return false; // Force retest?
 
@@ -211,6 +204,8 @@ bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
 
         m_playbin->property("uri", Glib::ustring(uri));
     }
+    else if (aState == Gst::STATE_PLAYING)
+        aState = Gst::STATE_READY;
 
     auto ret = m_playbin->set_state(aState);
     if (ret == Gst::STATE_CHANGE_NO_PREROLL)
@@ -221,9 +216,47 @@ bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
     if (ret == Gst::STATE_CHANGE_FAILURE)
     {
         Util::Log(Util::Log_Error) << "Failed to play song";
+        return false;
     }
 
     return true;
+}
+
+Playlist::Song* ActivePlaylist::nextSong(Song* aCurSong)
+{
+    if (m_songs.empty())
+        return nullptr;
+
+    if (hasRandom())
+    {
+        // TODO: Shuffle instead?
+        std::random_device dev;
+        std::uniform_int_distribution<size_t> track(0, m_songs.size());
+
+        Song* newSong = nullptr;
+
+        do
+        {
+            newSong = &m_songs.at(track(dev));
+        } while(newSong == aCurSong);
+
+        return newSong;
+    }
+
+    auto curSongIt = std::find_if(m_songs.begin(), m_songs.end(), [aCurSong](auto& it) { return aCurSong == &it; });
+    // Should hopefully never happen, but let's be on the safe side
+    if (curSongIt == m_songs.end())
+        curSongIt = m_songs.begin();
+
+    auto nextSongIt = curSongIt + 1;
+    if (nextSongIt == m_songs.end())
+    {
+        if (hasRepeat())
+            return &m_songs.front();
+        return nullptr;
+    }
+
+    return &(*nextSongIt);
 }
 
 bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib::RefPtr<Gst::Message>& aMessage)
@@ -334,8 +367,10 @@ void ActivePlaylist::on_about_to_finish()
 {
     Util::Log(Util::Log_Debug) << "About to finish current stream, calling next.";
 
-    if (hasSingle())
+    if (hasSingle() && !hasRepeat())
         stop();
+    else if (hasSingle())
+        changeSong(m_currentSong, Gst::STATE_PLAYING);
     else
         next();
 }

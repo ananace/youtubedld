@@ -44,6 +44,7 @@ public:
 
 private:
     bool changeSong(Song* aSong, Gst::State aState);
+    Song* nextSong(Song* aCurSong);
 
     bool on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage);
     void on_about_to_finish();
