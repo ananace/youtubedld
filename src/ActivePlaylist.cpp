@@ -114,11 +114,14 @@ void ActivePlaylist::resume()
 }
 void ActivePlaylist::next()
 {
-    changeSong(nextSong(m_currentSong), Gst::STATE_PLAYING);
+    Gst::State state, pending;
+    m_playbin->get_state(state, pending, {});
+
+    changeSong(nextSong(m_currentSong), state);
 }
 void ActivePlaylist::previous()
 {
-
+    // TODO
 }
 
 bool ActivePlaylist::hasConsume() const
@@ -372,7 +375,7 @@ void ActivePlaylist::on_about_to_finish()
     else if (hasSingle())
         changeSong(m_currentSong, Gst::STATE_PLAYING);
     else
-        next();
+        changeSong(nextSong(m_currentSong), Gst::STATE_PLAYING);
 }
 
 void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Element>& aSource)
