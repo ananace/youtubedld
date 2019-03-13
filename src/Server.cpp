@@ -109,9 +109,9 @@ void Server::run()
         return;
     }
 
-    m_activePlaylist.addSong("https://freesound.org/data/previews/449/449728_4068345-lq.mp3");
-    m_activePlaylist.addSong("https://freemusicarchive.org/file/music/ccCommunity/Lobo_Loco/Vagabond/Lobo_Loco_-_09_-_Work_Wonders_ID_999.mp3");
-    m_activePlaylist.play();
+    // m_activePlaylist.addSong("https://freesound.org/data/previews/449/449728_4068345-lq.mp3");
+    // m_activePlaylist.addSong("https://freemusicarchive.org/file/music/ccCommunity/Lobo_Loco/Vagabond/Lobo_Loco_-_09_-_Work_Wonders_ID_999.mp3");
+    // m_activePlaylist.play();
 
     // play("https://freemusicarchive.org/file/music/ccCommunity/Lobo_Loco/Vagabond/Lobo_Loco_-_09_-_Work_Wonders_ID_999.mp3");
 
