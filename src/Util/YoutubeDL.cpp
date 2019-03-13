@@ -172,7 +172,7 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
     if (result != 0)
         return { false };
 
-    Util::Log(Util::Log_Debug) << "> \"" << cmd << "\" returned (" << result << "|" << ret.size() << ") \"" << ret << "\"";
+    Util::Log(Util::Log_Debug) << "> \"" << cmd << "\" returned (" << result << "|" << ret.size() << "B) \"" << ret << "\"";
 
     auto data = nlohmann::json::parse(ret);
 
