@@ -14,8 +14,8 @@ namespace MPD
 
 enum
 {
-    kProtocolVersionMajor = 1,
-    kProtocolVersionMinor = 1,
+    kProtocolVersionMajor = 0,
+    kProtocolVersionMinor = 16,
     kProtocolVersionPatch = 1,
 };
 

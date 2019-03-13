@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 using Protocols::MPDProto;
 using namespace Protocols::MPD;
@@ -141,7 +142,9 @@ void MPDProto::update()
             snprintf(buf, 64, "OK MPD %i.%i.%i\n", kProtocolVersionMajor, kProtocolVersionMinor, kProtocolVersionPatch);
             writeData(client, buf);
 
-            Util::Log(Util::Log_Info) << "[MPD] Accepted connection from " << client_addr.sin_addr.s_addr << ":" << client_addr.sin_port;
+            char tmp[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &(client_addr.sin_addr), tmp, INET_ADDRSTRLEN);
+            Util::Log(Util::Log_Info) << "[MPD] Accepted connection from " << std::string(tmp) << ":" << client_addr.sin_port << " as " << client;
         }
 
         // Util::Log(Util::Log_Debug) << "[MPD] Exit accept";
@@ -154,11 +157,14 @@ void MPDProto::update()
 
         fd_set fds;
         FD_ZERO(&fds);
+        fd_set err_fds;
+        FD_ZERO(&err_fds);
 
         int maxSocket;
         for (auto& cl : m_clientMap)
         {
             FD_SET(cl.second.Socket, &fds);
+            FD_SET(cl.second.Socket, &err_fds);
             maxSocket = std::max(maxSocket, cl.second.Socket);
         }
 
@@ -166,18 +172,22 @@ void MPDProto::update()
         tv.tv_sec = 0;
         tv.tv_usec = 5000;
 
-        int ret = select(maxSocket + 1, &fds, nullptr, nullptr, &tv);
-        if (ret <= 0)
+        int ret = select(maxSocket + 1, &fds, nullptr, &err_fds, &tv);
+        if (ret < 0)
             Util::Log(Util::Log_Warning) << "[MPD] select in read returned " << ret;
 
         for (auto& cl : m_clientMap)
         {
+            if (FD_ISSET(cl.second.Socket, &err_fds))
+            {
+                Util::Log(Util::Log_Warning) << "[MPD] error is set on " << cl.first;
+            }
+
             if (!FD_ISSET(cl.second.Socket, &fds))
                 continue;
 
             char buffer[256];
             int len = recv(cl.second.Socket, &buffer[0], 255, 0);
-            Util::Log(Util::Log_Debug) << "[MPD] recv = " << len;
             if (len > 0)
             {
                 cl.second.Buffer.append(&buffer[0], len);
@@ -243,18 +253,27 @@ void MPDProto::update()
 void MPDProto::handleMessage(void* aMessageData)
 {
     auto& msg = *reinterpret_cast<MPDMessage*>(aMessageData);
-
     if (msg.Command != nullptr)
     {
         std::ostringstream argsString;
-        std::copy(msg.Arguments.begin(), msg.Arguments.end() - 1, std::ostream_iterator<std::string_view>(argsString, ", "));
-        std::copy(msg.Arguments.end() - 1, msg.Arguments.end(), std::ostream_iterator<std::string_view>(argsString));
+        for (auto& arg : msg.Arguments)
+        {
+            if (arg != msg.Arguments.front())
+                argsString << ", ";
+            argsString << arg;
+        }
 
         Util::Log(Util::Log_Info) << "[MPD] Receieved command from " << msg.Client << ": "
             << msg.Command->Name << "(" << argsString.str() << ")";
+
+        auto index = std::find_if(std::begin(AvailableCommands), std::end(AvailableCommands), [msg](auto& it) { return it.Name == msg.Command->Name; });
+        auto ret = runCommand(msg.Client, index - std::begin(AvailableCommands));
     }
     else
+    {
+        writeData(msg.Client, "ACK [5@0] {" + std::string(msg.CommandLine) + "} unknown command\n");
         Util::Log(Util::Log_Info) << "[MPD] Receieved unknown command from " << msg.Client;
+    }
 }
 
 void MPDProto::runCommandList(uint32_t aClient)
@@ -277,9 +296,29 @@ bool MPDProto::runCommand(uint32_t aClient, uint32_t aCommand)
     (void)aClient;
     (void) aCommand;
 
-    // TODO
+    auto& command = AvailableCommands[aCommand];
+    Util::Log(Util::Log_Debug) << "[MPD] Running command " << aCommand << "|" << command.Name << " for " << aClient;
 
-    return false;
+    // TODO
+    //
+    if (command.Name == "ping")
+    {
+        writeData(aClient, "OK\n");
+    }
+    else if (command.Name == "status")
+    {
+        writeData(aClient, "volume: 10\nrepeat: 0\nrandom: 0\nsingle: 0\nconsume: 0\nplaylist: 0\nplaylistlength: 0\nxfade: 0\nstate: stop\nOK\n");
+    }
+    else if (command.Name == "plchanges")
+    {
+        writeData(aClient, "OK\n");
+    }
+    else
+    {
+        writeData(aClient, "ACK [5@0] {" + std::string(command.Name) + "} unimplemented command\n");
+    }
+
+    return true;
 }
 
 void MPDProto::writeData(uint32_t aClient, const std::string& aData)
@@ -287,4 +326,6 @@ void MPDProto::writeData(uint32_t aClient, const std::string& aData)
     auto& cl = m_clientMap.at(aClient);
 
     send(cl.Socket, aData.c_str(), aData.size(), 0);
+
+    Util::Log(Util::Log_Info) << "[MPD] Wrote " << aData.size() << "B to " << aClient << " (\"" << aData.c_str() << "\")";
 }

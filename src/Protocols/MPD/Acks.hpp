@@ -7,6 +7,8 @@ namespace MPD
 {
 
 enum Acks {
+    ACK_OK = -1,
+
     ACK_ERROR_NOT_LIST = 1,
     ACK_ERROR_ARG = 2,
     ACK_ERROR_PASSWORD = 3,
