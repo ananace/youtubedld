@@ -13,6 +13,8 @@ namespace std
 #endif
 
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
 
 using namespace std::chrono_literals;
 
@@ -147,15 +149,43 @@ bool Playlist::loadFromFile(const std::string& aPath)
 {
     auto path = Util::ExpandPath(aPath);
 
-    // TODO
+    m_songs.clear();
+    auto fss = std::ifstream(path);
+    std::string line;
+    while (fss)
+    {
+        std::getline(fss, line);
+        if (line.empty() || line[0] == '#')
+            continue;
 
-    return false;
+        addSong(line);
+    }
+
+    return true;
 }
 bool Playlist::saveToFile(const std::string& aPath) const
 {
     auto path = Util::ExpandPath(aPath);
 
-    // TODO
+    auto fss = std::ofstream(path);
+    fss << "#EXTM3U" << std::endl;
 
-    return false;
+    for (auto& entry : m_songs)
+    {
+
+        fss << "#EXTINF:" << std::chrono::duration_cast<std::chrono::seconds>(entry.Duration).count() << "," << entry.Title << std::endl;
+
+        fss << "#YTDLD:" << entry.DataURL << "," << entry.ThumbnailURL << ",";
+        for (auto& tag : entry.Tags)
+        {
+            if (tag != *entry.Tags.begin())
+                fss << ",";
+            fss << tag.first << "=" << std::quoted(tag.second);
+        }
+        fss << std::endl;
+
+        fss << entry.URL << std::endl;
+    }
+
+    return true;
 }
