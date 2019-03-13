@@ -132,12 +132,17 @@ bool Server::on_tick()
     }
 
     // Post events
-    for (auto& prot : m_activeProtocols)
+    if (!m_eventQueue.empty())
     {
-        if (!prot->supportsPost())
-            continue;
+        for (auto& prot : m_activeProtocols)
+        {
+            if (!prot->supportsPost())
+                continue;
 
-        prot->post();
+            for (auto& ev : m_eventQueue)
+                prot->post();
+        }
+        m_eventQueue.clear();
     }
 
     return true;

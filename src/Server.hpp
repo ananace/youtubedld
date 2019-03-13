@@ -4,6 +4,7 @@
 #include "ActivePlaylist.hpp"
 #include "Protocols/Base.hpp"
 
+#include <deque>
 #include <memory>
 #include <vector>
 
@@ -31,6 +32,7 @@ private:
     Config m_config;
     std::vector<std::unique_ptr<Protocols::Base>> m_activeProtocols;
     ActivePlaylist m_activePlaylist;
+    std::deque<Protocols::Event> m_eventQueue;
 
     sigc::connection m_ticker;
 
