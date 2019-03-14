@@ -140,5 +140,6 @@ private:
 using LineTokeniser = Tokeniser<std::string_view, std::string_view, '\n'>;
 using CommaTokeniser = Tokeniser<std::string_view, std::string_view, ','>;
 using SpaceTokeniser = Tokeniser<std::string_view, std::string_view, ' '>;
+using QuoteTokeniser = Tokeniser<std::string_view, std::string_view, '"'>;
 
 }

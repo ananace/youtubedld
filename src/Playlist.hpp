@@ -13,6 +13,7 @@ public:
     struct Song
     {
         std::string URL;
+        size_t ID;
 
         std::string DataURL;
         std::string ThumbnailURL;
@@ -45,10 +46,12 @@ public:
     SongArray::iterator end();
     size_t size() const;
 
+    bool hasSongID(int aID) const;
     bool hasSong(const std::string& aSearch) const;
-    void addSong(const std::string& aUrl);
+    const Song& addSong(const std::string& aUrl);
     void removeSong(const std::string& aSearch);
     void removeSong(size_t aSong);
+    void removeSongID(int aID);
     void removeAllSongs();
 
     virtual void update();
@@ -60,4 +63,5 @@ public:
 
 protected:
     SongArray m_songs;
+    size_t m_songCounter;
 };

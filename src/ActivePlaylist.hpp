@@ -40,6 +40,9 @@ public:
     bool hasSingle() const;
     void setSingle(bool aSingle = true);
 
+    float getVolume() const;
+    void setVolume(float aVolume);
+
     bool isLive() const;
 
 private:

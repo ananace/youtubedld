@@ -33,6 +33,7 @@ bool Playlist::Song::isLocal() const
 }
 
 Playlist::Playlist()
+    : m_songCounter(0)
 {
 }
 
@@ -67,12 +68,13 @@ bool Playlist::hasSong(const std::string& aSearch) const
         return it.URL == aSearch || it.Title == aSearch;
     }) != cend();
 }
-void Playlist::addSong(const std::string& aUrl)
+const Playlist::Song& Playlist::addSong(const std::string& aUrl)
 {
     // TODO: Initial update
     m_songs.push_back({ aUrl });
     auto& added = m_songs.back();
 
+    added.ID = m_songCounter++;
     if (added.isLocal())
     {
         if (std::string_view(added.URL).find("file://") == std::string_view::npos)
@@ -85,6 +87,8 @@ void Playlist::addSong(const std::string& aUrl)
     {
         // s_songUpdateQueue.queueTask<void>([]() { });
     }
+
+    return added;
 }
 void Playlist::removeSong(const std::string& aSearch)
 {

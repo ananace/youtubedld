@@ -33,6 +33,7 @@ set(headers
     Protocols/Base/Event.hpp
     Protocols/MPD/Commands.hpp
 
+    Util/EpollServer.hpp
     Util/GObjectSignalWrapper.hpp
     Util/Logging.hpp
     Util/Path.hpp
@@ -51,6 +52,10 @@ set(sources
     Protocols/MPRIS.cpp
     Protocols/REST.cpp
 
+    Protocols/MPD/Acks.cpp
+    Protocols/MPD/Commands.cpp
+
+    Util/EpollServer.cpp
     Util/Logging.cpp
     Util/Path.cpp
     Util/WorkQueue.cpp

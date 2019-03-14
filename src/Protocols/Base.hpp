@@ -9,6 +9,8 @@ enum : uint32_t
     Client_All  = UINT32_MAX,
 };
 
+class Server;
+
 namespace Protocols
 {
 
@@ -22,10 +24,18 @@ public:
     virtual bool supportsPost() const { return false; }
 
     virtual bool init() { return true; }
-    virtual void update() = 0;
+    virtual bool update() = 0;
 
     virtual bool poll(Event& /* aEv */) { return false; }
     virtual void post(uint32_t /* aClient */ = Client_All) { }
+
+protected:
+    Server& getServer() { return *m_server; }
+
+private:
+    Server* m_server;
+
+    friend Server;
 };
 
 }

@@ -61,7 +61,7 @@ void Server::init(int aArgc, const char** aArgv)
     }
 
     m_mainLoop = Glib::MainLoop::create();
-    m_ticker = Glib::signal_timeout().connect(sigc::mem_fun(*this, &Server::on_tick), 2000);
+    m_ticker = Glib::signal_timeout().connect(sigc::mem_fun(*this, &Server::on_tick), 500);
 
     m_activePlaylist.init(*this);
 
@@ -92,6 +92,9 @@ void Server::init(int aArgc, const char** aArgv)
         // m_activeProtocols.push_back(std::make_unique<Protocols::REST>(port));
         Util::Log(Util::Log_Debug) << "Enabling REST on port " << port;
     }
+
+    for (auto& prot : m_activeProtocols)
+        prot->m_server = this;
 
     auto removed = std::remove_if(m_activeProtocols.begin(), m_activeProtocols.end(), [](auto& prot) {
         return !prot->init();
@@ -124,7 +127,9 @@ bool Server::on_tick()
     // Update protocols
     for (auto& prot : m_activeProtocols)
     {
-        prot->update();
+        for (int i = 0; prot->update() && i < 10; ++i)
+            ; // Update up to 10 times in a row
+
         Protocols::Event ev;
         while (prot->poll(ev))
         {

@@ -9,6 +9,7 @@ ActivePlaylist::ActivePlaylist()
     : m_server(nullptr)
     , m_playFlags(0)
     , m_currentSong(nullptr)
+    , Playlist()
 {
 }
 
@@ -167,6 +168,16 @@ void ActivePlaylist::setSingle(bool aSingle)
         m_playFlags |= uint8_t(PF_Single);
     else
         m_playFlags &= uint8_t(~PF_Single);
+}
+
+float ActivePlaylist::getVolume() const
+{
+    // TODO
+    return 0;
+}
+void ActivePlaylist::setVolume(float aVolume)
+{
+    // TODO
 }
 
 bool ActivePlaylist::isLive() const

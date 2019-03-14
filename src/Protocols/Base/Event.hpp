@@ -11,8 +11,7 @@ enum EventType
 {
     Event_Invalid = 0,
 
-    Event_AppendSong,
-    Event_InsertSong,
+    Event_AddSong,
     Event_RemoveSong,
     Event_MoveSong,
 
@@ -35,12 +34,9 @@ struct Event
     union
     {
         struct {
-            std::string Song;
-        } AppendSong;
-        struct {
-            std::string Song;
+            int SongID;
             size_t Position;
-        } InsertSong;
+        } AddSong;
         struct {
             size_t Position;
         } RemoveSong;

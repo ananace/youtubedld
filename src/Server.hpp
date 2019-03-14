@@ -24,6 +24,8 @@ public:
     const Config& getConfig() const noexcept { return m_config; }
     Config& getConfig() noexcept { return m_config; }
 
+    ActivePlaylist& getQueue() { return m_activePlaylist; }
+
 private:
     bool on_tick();
     bool on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage);

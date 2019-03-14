@@ -11,11 +11,11 @@ namespace MPD
 
 enum Permissions : uint8_t
 {
-    PERMISSION_NONE    = 0,
-    PERMISSION_ADD     = 1u << 0u,
-    PERMISSION_READ    = 1u << 1u,
-    PERMISSION_CONTROL = 1u << 2u,
-    PERMISSION_ADMIN   = 1u << 3u,
+    PERMISSION_NONE = 0,
+    PERMISSION_ADD,
+    PERMISSION_READ,
+    PERMISSION_CONTROL,
+    PERMISSION_ADMIN,
 };
 
 struct CommandDefinition
@@ -23,6 +23,133 @@ struct CommandDefinition
     const char* Name;
     Permissions Permission;
     int8_t MinArgs, MaxArgs;
+};
+
+enum AvailableCommandIDs
+{
+    CommandID_add = 0,
+    CommandID_addid,
+    CommandID_addtagid,
+    CommandID_albumart,
+    CommandID_channels,
+    CommandID_clear,
+    CommandID_clearerror,
+    CommandID_cleartagid,
+    CommandID_close,
+    CommandID_commands,
+    CommandID_command_list_begin,
+    CommandID_command_list_ok_begin,
+    CommandID_command_list_end,
+    CommandID_config,
+    CommandID_consume,
+#ifdef ENABLE_DATABASE
+    CommandID_count,
+#endif
+    CommandID_crossfade,
+    CommandID_currentsong,
+    CommandID_decoders,
+    CommandID_delete,
+    CommandID_deleteid,
+    CommandID_disableoutput,
+    CommandID_enableoutput,
+#ifdef ENABLE_DATABASE
+    CommandID_find,
+    CommandID_findadd,
+#endif
+    CommandID_idle,
+    CommandID_noidle,
+    CommandID_kill,
+#ifdef ENABLE_DATABASE
+    CommandID_list,
+    CommandID_listall,
+    CommandID_listallinfo,
+#endif
+    CommandID_listfiles,
+#ifdef ENABLE_DATABASE
+    CommandID_listmounts,
+#endif
+#ifdef ENABLE_NEIGHBOR_PLUGINS
+    CommandID_listneighbors,
+#endif
+    CommandID_listpartitions,
+    CommandID_listplaylist,
+    CommandID_listplaylistinfo,
+    CommandID_listplaylists,
+    CommandID_load,
+    CommandID_lsinfo,
+    CommandID_mixrampdb,
+    CommandID_mixrampdelay,
+#ifdef ENABLE_DATABASE
+    CommandID_mount,
+#endif
+    CommandID_move,
+    CommandID_moveid,
+    CommandID_newpartition,
+    CommandID_next,
+    CommandID_notcommands,
+    CommandID_outputs,
+    CommandID_outputset,
+    CommandID_partition,
+    CommandID_password,
+    CommandID_pause,
+    CommandID_ping,
+    CommandID_play,
+    CommandID_playid,
+    CommandID_playlist,
+    CommandID_playlistadd,
+    CommandID_playlistclear,
+    CommandID_playlistdelete,
+    CommandID_playlistfind,
+    CommandID_playlistid,
+    CommandID_playlistinfo,
+    CommandID_playlistmove,
+    CommandID_playlistsearch,
+    CommandID_plchanges,
+    CommandID_plchangesposid,
+    CommandID_previous,
+    CommandID_prio,
+    CommandID_prioid,
+    CommandID_random,
+    CommandID_rangeid,
+    CommandID_readcomments,
+    CommandID_readmessages,
+    CommandID_rename,
+    CommandID_repeat,
+    CommandID_replay_gain_mode,
+    CommandID_replay_gain_status,
+    CommandID_rescan,
+    CommandID_rm,
+    CommandID_save,
+#ifdef ENABLE_DATABASE
+    CommandID_search,
+    CommandID_searchadd,
+    CommandID_searchaddpl,
+#endif
+    CommandID_seek,
+    CommandID_seekcur,
+    CommandID_seekid,
+    CommandID_sendmessage,
+    CommandID_setvol,
+    CommandID_shuffle,
+    CommandID_single,
+    CommandID_stats,
+    CommandID_status,
+#ifdef ENABLE_SQLITE
+    CommandID_sticker,
+#endif
+    CommandID_stop,
+    CommandID_subscribe,
+    CommandID_swap,
+    CommandID_swapid,
+    CommandID_tagtypes,
+    CommandID_toggleoutput,
+#ifdef ENABLE_DATABASE
+    CommandID_unmount,
+#endif
+    CommandID_unsubscribe,
+    CommandID_update,
+    CommandID_urlhandlers,
+    CommandID_volume,
 };
 
 static constexpr struct CommandDefinition AvailableCommands[] = {
@@ -36,6 +163,9 @@ static constexpr struct CommandDefinition AvailableCommands[] = {
     { "cleartagid", PERMISSION_ADD, 1, 2 },
     { "close", PERMISSION_NONE, -1, -1 },
     { "commands", PERMISSION_NONE, 0, 0 },
+    { "command_list_begin", PERMISSION_NONE, 0, 0 },
+    { "command_list_ok_begin", PERMISSION_NONE, 0, 0 },
+    { "command_list_end", PERMISSION_NONE, 0, 0 },
     { "config", PERMISSION_ADMIN, 0, 0 },
     { "consume", PERMISSION_CONTROL, 1, 1 },
 #ifdef ENABLE_DATABASE
@@ -53,6 +183,7 @@ static constexpr struct CommandDefinition AvailableCommands[] = {
     { "findadd", PERMISSION_ADD, 1, -1 },
 #endif
     { "idle", PERMISSION_READ, 0, -1 },
+    { "noidle", PERMISSION_READ, 0, 0 }, // TODO: Not a command
     { "kill", PERMISSION_ADMIN, -1, -1 },
 #ifdef ENABLE_DATABASE
     { "list", PERMISSION_READ, 1, -1 },
