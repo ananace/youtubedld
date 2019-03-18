@@ -72,11 +72,27 @@ private:
     struct Client
     {
         int Socket;
+        int UserFlags;
         std::string Buffer;
         std::chrono::system_clock::time_point LastActivity;
         uint16_t IdleFlags;
         bool InCmdList, CmdListVerbose;
         std::deque<void*> CmdList;
+
+        Client()
+            : Socket(0)
+            , UserFlags(0)
+            , IdleFlags(0)
+            , InCmdList(false)
+            , CmdListVerbose(false)
+        { }
+        Client(int aSocket)
+            : Socket(aSocket)
+            , UserFlags(0)
+            , IdleFlags(0)
+            , InCmdList(false)
+            , CmdListVerbose(false)
+        { }
     };
 
     void handleMessage(void* aMessageData, bool aCmdList);

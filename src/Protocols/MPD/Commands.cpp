@@ -68,6 +68,8 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
             }break;
         case CommandID_noidle:
             ret = doNoidle(aClient, aCommand); break;
+        case CommandID_notcommands:
+            ret = doCommands(aClient, aCommand); break;
         case CommandID_ping:
             ret = doPing(aClient, aCommand); break;
         case CommandID_plchanges:
@@ -99,6 +101,17 @@ int MPDProto::doClose(uint32_t aClient, uint32_t aCommand)
 }
 int MPDProto::doCommands(uint32_t aClient, uint32_t aCommand)
 {
+    auto& cl = m_clientMap[aClient];
+    Permissions userPerm = Permissions(cl.UserFlags & 0x07);
+    bool invert = aCommand == CommandID_notcommands;
+    for (auto& cmd : AvailableCommands)
+    {
+        if (!invert ? (cmd.Permission > userPerm) : (cmd.Permission <= userPerm))
+            continue;
+
+        writeData(aClient, cmd.Name + "\n");
+    }
+
     return ACK_OK;
 }
 int MPDProto::doConsume(uint32_t aClient, uint32_t aCommand, bool aConsume)

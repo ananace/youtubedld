@@ -23,6 +23,15 @@ struct CommandDefinition
     const char* Name;
     Permissions Permission;
     int8_t MinArgs, MaxArgs;
+    bool Meta;
+
+    constexpr CommandDefinition(const char* aName, Permissions aPermission, int8_t aMinArgs, int8_t aMaxArgs, bool aMeta = false)
+        : Name(aName)
+        , Permission(aPermission)
+        , MinArgs(aMinArgs)
+        , MaxArgs(aMaxArgs)
+        , Meta(aMeta)
+    { }
 };
 
 enum AvailableCommandIDs
@@ -150,6 +159,8 @@ enum AvailableCommandIDs
     CommandID_update,
     CommandID_urlhandlers,
     CommandID_volume,
+
+    CommandID_COUNT,
 };
 
 static constexpr struct CommandDefinition AvailableCommands[] = {
@@ -163,9 +174,9 @@ static constexpr struct CommandDefinition AvailableCommands[] = {
     { "cleartagid", PERMISSION_ADD, 1, 2 },
     { "close", PERMISSION_NONE, -1, -1 },
     { "commands", PERMISSION_NONE, 0, 0 },
-    { "command_list_begin", PERMISSION_NONE, 0, 0 },
-    { "command_list_ok_begin", PERMISSION_NONE, 0, 0 },
-    { "command_list_end", PERMISSION_NONE, 0, 0 },
+    { "command_list_begin", PERMISSION_NONE, 0, 0, true },
+    { "command_list_ok_begin", PERMISSION_NONE, 0, 0, true },
+    { "command_list_end", PERMISSION_NONE, 0, 0, true },
     { "config", PERMISSION_ADMIN, 0, 0 },
     { "consume", PERMISSION_CONTROL, 1, 1 },
 #ifdef ENABLE_DATABASE
@@ -183,7 +194,7 @@ static constexpr struct CommandDefinition AvailableCommands[] = {
     { "findadd", PERMISSION_ADD, 1, -1 },
 #endif
     { "idle", PERMISSION_READ, 0, -1 },
-    { "noidle", PERMISSION_READ, 0, 0 }, // TODO: Not a command
+    { "noidle", PERMISSION_READ, 0, 0, true },
     { "kill", PERMISSION_ADMIN, -1, -1 },
 #ifdef ENABLE_DATABASE
     { "list", PERMISSION_READ, 1, -1 },
