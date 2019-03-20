@@ -30,6 +30,12 @@ const std::string SAFE_AUDIO_FORMATS[] = {
 
 }
 
+YoutubeDL s_youtubeDL;
+YoutubeDL& YoutubeDL::getSingleton()
+{
+    return s_youtubeDL;
+}
+
 YoutubeDL::YoutubeDL()
 {
 }
@@ -176,7 +182,16 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
 
     Util::Log(Util::Log_Debug) << "[YDL] > \"" << cmd << "\" returned (" << result << "|" << ret.size() << "B)";
 
-    return { true, data["formats"][0]["url"], data["title"], data["formats"][0]["http_headers"] };
+    try
+    {
+        auto data = nlohmann::json::parse(ret);
+        return { true, data["duration"], data["formats"][0]["url"], data["title"], data["formats"][0]["http_headers"] };
+    }
+    catch(const std::exception& ex)
+    {
+        Util::Log(Util::Log_Error) << ex.what();
+        throw ex;
+    }
 }
 
 int YoutubeDL::execute(const std::string& args, std::string& out)

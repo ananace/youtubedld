@@ -16,6 +16,7 @@ struct YoutubeDLResponse
 {
     bool Success;
 
+    uint32_t Duration;
     std::string DownloadUrl;
     std::string Title;
     std::unordered_map<std::string, std::string> DownloadHeaders;
@@ -31,6 +32,8 @@ public:
 
     YoutubeDL& operator=(const YoutubeDL&) = default;
     YoutubeDL& operator=(YoutubeDL&&) = default;
+
+    static YoutubeDL& getSingleton();
 
     void findInstall();
     void findInstall(const std::vector<std::string>& aSearchPaths);
