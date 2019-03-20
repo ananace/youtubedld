@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <experimental/filesystem>
 #include <iomanip>
+#include <fstream>
+#include <random>
 #include <sstream>
 
 #include <cstdio>
@@ -172,9 +174,7 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
     if (result != 0)
         return { false };
 
-    Util::Log(Util::Log_Debug) << "> \"" << cmd << "\" returned (" << result << "|" << ret.size() << "B) \"" << ret << "\"";
-
-    auto data = nlohmann::json::parse(ret);
+    Util::Log(Util::Log_Debug) << "[YDL] > \"" << cmd << "\" returned (" << result << "|" << ret.size() << "B)";
 
     return { true, data["formats"][0]["url"], data["title"], data["formats"][0]["http_headers"] };
 }
@@ -184,18 +184,26 @@ int YoutubeDL::execute(const std::string& args, std::string& out)
     std::ostringstream oss;
     oss << m_installPath << " " << args;
 
-    std::array<char, 128> buffer;
-    std::shared_ptr<FILE> pipe(popen(oss.str().c_str(), "r"));
-    if (!pipe)
-        throw std::runtime_error("popen() failed!");
+    std::random_device dev;
+    std::uniform_int_distribution<int> dist(100000, 999999);
+    int val = dist(dev);
 
-    oss = std::ostringstream();
-    while (!feof(pipe.get())) {
-        if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
-            oss << buffer.data();
+    auto tmpdir = fs::temp_directory_path();
+    auto tmpname = tmpdir / ("ydl_out" + std::to_string(val));
+
+    Util::Log(Util::Log_Debug) << "[YDL] < " << oss.str();
+
+    std::string scommand = oss.str();
+    std::string cmd = scommand + " 1> " + tmpname.string();
+    int ret = std::system(cmd.c_str());
+    std::ifstream file(tmpname, std::ios::in | std::ios::binary);
+    std::string line;
+    while (file)
+    {
+        std::getline(file, line);
+        out.append(line);
     }
-
-    out = oss.str();
-
-    return WEXITSTATUS(pclose(pipe.get()));
+    file.close();
+    fs::remove(tmpname);
+    return ret;
 }
