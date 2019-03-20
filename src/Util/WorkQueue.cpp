@@ -52,7 +52,7 @@ void WorkQueue::stop()
 
 void WorkQueue::_workThread()
 {
-    std::unique_lock<std::mutex> _lock(m_queueMutex);
+    std::unique_lock<std::mutex> _lock(m_queueMutex, std::defer_lock);
     while (m_running)
     {
         _lock.lock();

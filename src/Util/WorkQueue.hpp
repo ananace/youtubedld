@@ -21,6 +21,7 @@ public:
     void setWorkerCount(uint8_t aCount);
     uint8_t getWorkerCount() const;
 
+    bool running() const { return m_running; }
     void start();
     void stop();
 
