@@ -1,6 +1,8 @@
 #include "Playlist.hpp"
 #include "Util/Path.hpp"
 #include "Util/WorkQueue.hpp"
+#include "Util/YoutubeDL.hpp"
+#include "Util/Logging.hpp"
 
 #if __has_include(<string_view>)
 #include <string_view>
@@ -18,8 +20,8 @@ namespace std
 
 using namespace std::chrono_literals;
 
-// TODO: Place somewhere more reasonable
-// Util::WorkQueue s_songUpdateQueue;
+// TODO: Place somewhere more reasonable?
+Util::WorkQueue s_songUpdateQueue;
 
 bool Playlist::Song::isDirect() const
 {
@@ -35,6 +37,8 @@ bool Playlist::Song::isLocal() const
 Playlist::Playlist()
     : m_songCounter(0)
 {
+    if (!s_songUpdateQueue.running())
+        s_songUpdateQueue.start();
 }
 
 Playlist::~Playlist()
@@ -70,23 +74,9 @@ bool Playlist::hasSong(const std::string& aSearch) const
 }
 const Playlist::Song& Playlist::addSong(const std::string& aUrl)
 {
-    // TODO: Initial update
-    m_songs.push_back({ aUrl });
-    auto& added = m_songs.back();
-
-    added.ID = m_songCounter++;
-    if (added.isLocal())
-    {
-        if (std::string_view(added.URL).find("file://") == std::string_view::npos)
-            added.URL = "file://" + added.URL;
-
-        added.DataURL = added.URL;
-        added.UpdateTime = std::chrono::system_clock::now() + 24h;
-    }
-    else
-    {
-        // s_songUpdateQueue.queueTask<void>([]() { });
-    }
+    auto& added = _addSong(aUrl);
+    if (!added.isLocal())
+        s_songUpdateQueue.queueTask<void>([this,&added]() { _updateSong(added); });
 
     return added;
 }
@@ -115,18 +105,20 @@ void Playlist::update()
 
     for (auto& it : m_songs)
     {
-        if (it.UpdateTime > now)
+        if (it.NextUpdateTime > now)
             continue;
 
         if (!it.isDirect())
         {
-            // TODO
-            // s_songUpdateQueue.queueTask<void>([]() { });
+            s_songUpdateQueue.queueTask<void>([this,&it]() { _updateSong(it); });
 
-            it.UpdateTime = now + 3600s;
+            it.NextUpdateTime = now + 1h;
         }
         else
-            it.UpdateTime = now + 24h;
+        {
+            it.UpdateTime = now;
+            it.NextUpdateTime = now + 24h;
+        }
     }
 }
 
@@ -134,7 +126,7 @@ void Playlist::addFromPlaylist(const Playlist& aPlaylist)
 {
     m_songs.resize(m_songs.size() + aPlaylist.size());
     for (const auto& s : aPlaylist.m_songs)
-        m_songs.push_back(s);
+        _addSong(s);
 }
 
 bool Playlist::addFromFile(const std::string& aPath)
@@ -159,10 +151,11 @@ bool Playlist::loadFromFile(const std::string& aPath)
     while (fss)
     {
         std::getline(fss, line);
+        // TODO: Parse EXTINF + YTDLD
         if (line.empty() || line[0] == '#')
             continue;
 
-        addSong(line);
+        _addSong(line);
     }
 
     return true;
@@ -192,4 +185,49 @@ bool Playlist::saveToFile(const std::string& aPath) const
     }
 
     return true;
+}
+
+Playlist::Song& Playlist::_addSong(const std::string& aUrl)
+{
+    m_songs.push_back({ aUrl });
+    auto& added = m_songs.back();
+
+    added.ID = m_songCounter++;
+    if (added.isLocal())
+    {
+        if (std::string_view(added.URL).find("file://") == std::string_view::npos)
+            added.URL = "file://" + added.URL;
+
+        added.DataURL = added.URL;
+        added.NextUpdateTime = std::chrono::system_clock::now() + 24h;
+    }
+
+    return added;
+}
+
+Playlist::Song& Playlist::_addSong(const Song& aSong)
+{
+    m_songs.push_back(aSong);
+    auto& added = m_songs.back();
+
+    added.ID = m_songCounter++;
+    return added;
+}
+
+void Playlist::_updateSong(Song& aSong)
+{
+    auto& ydl = YoutubeDL::getSingleton();
+
+    if (!ydl.isAvailable())
+        return;
+
+    auto response = ydl.request({ aSong.URL });
+
+    aSong.Duration = std::chrono::seconds(response.Duration);
+    aSong.DataURL = response.DownloadUrl;
+    aSong.Title = response.Title;
+    aSong.DataHeaders = response.DownloadHeaders;
+    aSong.UpdateTime = std::chrono::system_clock::now();
+
+    Util::Log(Util::Log_Debug) << "[Song] Received song information; Title=" << aSong.Title << " duration=" << aSong.Duration.count();
 }

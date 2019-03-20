@@ -16,6 +16,7 @@ public:
         size_t ID;
 
         std::string DataURL;
+        std::unordered_map<std::string, std::string> DataHeaders;
         std::string ThumbnailURL;
 
         std::string Title;
@@ -23,6 +24,7 @@ public:
 
         std::chrono::nanoseconds Duration;
         std::chrono::system_clock::time_point UpdateTime;
+        std::chrono::system_clock::time_point NextUpdateTime;
 
         bool Direct;
 
@@ -62,6 +64,10 @@ public:
     bool saveToFile(const std::string& aPath) const;
 
 protected:
+    Song& _addSong(const Song& aSong);
+    Song& _addSong(const std::string& aUrl);
+    void _updateSong(Song& aSong);
+
     SongArray m_songs;
     size_t m_songCounter;
 };
