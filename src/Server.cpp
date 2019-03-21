@@ -31,27 +31,12 @@ void Server::init(int aArgc, const char** aArgv)
 
     Util::Log(Util::Log_Info) << "Loaded conf";
 
-    // YoutubeDL ydl;
-    // ydl.findInstall();
-    // if (!ydl.isAvailable())
-    // {
-    //     Util::Log(Util::Log_Info) << "No YDL found";
-    // }
-
-    // soup->property("user-agent", resp.DownloadHeaders["User-Agent"]);
-
-    // exit(0);
-
-    // Util::Log(Util::Log_Info) << "YDL version: " << ydl.getVersion();
-
-    // auto resp = ydl.request({ "https://www.youtube.com/watch?v=iL5DY8HVJPE", false, "opus" });
-
-    // Util::Log(Util::Log_Info) << "Video is: " << resp.Title << " ( " << resp.DownloadUrl << " ) {";
-    // for (auto& hh : resp.DownloadHeaders)
-    //     Util::Log(Util::Log_Info) << "  " << hh.first << ": " << hh.second;
-    // Util::Log(Util::Log_Info) << "}";
-
-    // exit(0);
+    YoutubeDL& ydl = YoutubeDL::getSingleton();
+    ydl.findInstall();
+    if (!ydl.isAvailable())
+        Util::Log(Util::Log_Info) << "No YDL found";
+    else
+        Util::Log(Util::Log_Info) << "YDL version: " << ydl.getVersion();
 
     {
         // Gst::init takes references
