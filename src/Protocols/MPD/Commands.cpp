@@ -109,7 +109,7 @@ int MPDProto::doCommands(uint32_t aClient, uint32_t aCommand)
         if (!invert ? (cmd.Permission > userPerm) : (cmd.Permission <= userPerm))
             continue;
 
-        writeData(aClient, cmd.Name + "\n");
+        writeData(aClient, std::string(cmd.Name) + "\n");
     }
 
     return ACK_OK;
@@ -168,6 +168,8 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
     auto& queue = getServer().getQueue();
     std::ostringstream oss;
 
+    auto status = queue.getStatus();
+
     oss << "volume: " << int(queue.getVolume() * 100) << "\n"
         << "repeat: " << int(queue.hasRepeat()) << "\n"
         << "random: " << int(queue.hasRandom()) << "\n"
@@ -175,8 +177,33 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
         << "consume: " << int(queue.hasConsume()) << "\n"
         << "playlist: " << 0 << "\n"
         << "playlistlength: " << queue.size() << "\n"
-        << "xfade: " << 0 << "\n"
-        << "state: " << "stop" << "\n";
+        << "xfade: " << 0 << "\n";
+
+    switch(status)
+    {
+    case PS_Stopped:
+        oss << "state: " << "stop" << "\n";
+        break;
+
+    default:
+        {
+            std::string statestr = status == PS_Playing ? "play" : "pause";
+            auto& cursong = *queue.getSong();
+            float seconds = std::chrono::duration<float>(queue.getElapsed()).count();
+
+            oss << "state: " << statestr << "\n"
+                << "song: " << queue.indexOf(cursong) << "\n"
+                << "songid: " << cursong.ID << "\n"
+                << "time: " << int(seconds) << ":" << std::chrono::duration_cast<std::chrono::seconds>(cursong.Duration).count() << "\n"
+                << "elapsed: " << seconds << "\n";
+        }
+    }
+
+    if (queue.hasError())
+    {
+        oss << "error: " << queue.getError() << "\n";
+        queue.clearError();
+    }
 
     writeData(aClient, oss.str());
 

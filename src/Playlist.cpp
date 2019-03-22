@@ -17,6 +17,7 @@ namespace std
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 
 using namespace std::chrono_literals;
 
@@ -65,12 +66,30 @@ size_t Playlist::size() const
 {
     return m_songs.size();
 }
+size_t Playlist::indexOf(const Song& aSong) const
+{
+    auto it = std::find_if(cbegin(), cend(), [aSong](auto& it) {
+        return it.ID == aSong.ID;
+    });
+    if (it == cend())
+        return std::numeric_limits<size_t>::max();
+    return cend() - it;
+}
 
 bool Playlist::hasSong(const std::string& aSearch) const
 {
     return std::find_if(cbegin(), cend(), [aSearch](auto& it) {
         return it.URL == aSearch || it.Title == aSearch;
     }) != cend();
+}
+const Playlist::Song* Playlist::getSong(const std::string& aSearch) const
+{
+    auto it = std::find_if(cbegin(), cend(), [aSearch](auto& it) {
+        return it.URL == aSearch || it.Title == aSearch;
+    });
+    if (it == cend())
+        return nullptr;
+    return &*it;
 }
 const Playlist::Song& Playlist::addSong(const std::string& aUrl)
 {

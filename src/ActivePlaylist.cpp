@@ -125,6 +125,47 @@ void ActivePlaylist::previous()
     // TODO
 }
 
+PlayStatus ActivePlaylist::getStatus() const
+{
+    Gst::State state, pending;
+    m_playbin->get_state(state, pending, {});
+
+    switch(state)
+    {
+    case Gst::STATE_PAUSED:
+        return PS_Paused;
+    case Gst::STATE_PLAYING:
+        return PS_Playing;
+
+    default:
+        return PS_Stopped;
+    }
+}
+
+const Playlist::Song* ActivePlaylist::getSong() const
+{
+    return m_currentSong;
+}
+
+std::chrono::nanoseconds ActivePlaylist::getDuration() const
+{
+    if (!m_currentSong)
+        return std::chrono::nanoseconds(0);
+    return m_currentSong->Duration;
+}
+std::chrono::nanoseconds ActivePlaylist::getElapsed() const
+{
+    if (!m_currentSong)
+        return std::chrono::nanoseconds(0);
+
+    Gst::Format fmt = Gst::FORMAT_TIME;
+    gint64 elapse = 0;
+
+    if (m_playbin->query_position(fmt, elapse))
+        return std::chrono::nanoseconds(elapse);
+    return std::chrono::nanoseconds(0);
+}
+
 bool ActivePlaylist::hasConsume() const
 {
     return (m_playFlags & PF_Consume) != 0;
@@ -170,14 +211,32 @@ void ActivePlaylist::setSingle(bool aSingle)
         m_playFlags &= uint8_t(~PF_Single);
 }
 
+bool ActivePlaylist::hasError() const
+{
+    return !m_errorMsg.empty();
+}
+const std::string& ActivePlaylist::getError() const
+{
+    return m_errorMsg;
+}
+void ActivePlaylist::setError(const std::string& aError)
+{
+    m_errorMsg = aError;
+}
+void ActivePlaylist::clearError()
+{
+    m_errorMsg.clear();
+}
+
 float ActivePlaylist::getVolume() const
 {
-    // TODO
-    return 0;
+    double volume = 0;
+    m_playbin->get_property<double>("volume", volume);
+    return float(volume);
 }
 void ActivePlaylist::setVolume(float aVolume)
 {
-    // TODO
+    m_playbin->set_property<double>("volume", aVolume);
 }
 
 bool ActivePlaylist::isLive() const

@@ -47,9 +47,11 @@ public:
     SongArray::iterator begin();
     SongArray::iterator end();
     size_t size() const;
+    size_t indexOf(const Song& aSong) const;
 
     bool hasSongID(int aID) const;
     bool hasSong(const std::string& aSearch) const;
+    const Song* getSong(const std::string& aSearch) const;
     const Song& addSong(const std::string& aUrl);
     void removeSong(const std::string& aSearch);
     void removeSong(size_t aSong);

@@ -14,6 +14,13 @@ enum PlayFlags : uint8_t
     PF_Live    = 1u << 4u,
 };
 
+enum PlayStatus : uint8_t
+{
+    PS_Stopped,
+    PS_Paused,
+    PS_Playing
+};
+
 class ActivePlaylist : public Playlist
 {
 public:
@@ -31,6 +38,12 @@ public:
     void next();
     void previous();
 
+    PlayStatus getStatus() const;
+    const Song* getSong() const;
+
+    std::chrono::nanoseconds getDuration() const;
+    std::chrono::nanoseconds getElapsed() const;
+
     bool hasConsume() const;
     void setConsume(bool aConsume = true);
     bool hasRandom() const;
@@ -39,6 +52,11 @@ public:
     void setRepeat(bool aRepeat = true);
     bool hasSingle() const;
     void setSingle(bool aSingle = true);
+
+    bool hasError() const;
+    const std::string& getError() const;
+    void setError(const std::string& aError);
+    void clearError();
 
     float getVolume() const;
     void setVolume(float aVolume);
@@ -59,4 +77,5 @@ private:
     uint8_t m_playFlags;
     Song* m_currentSong;
     std::chrono::nanoseconds m_currentSongDur, m_currentSongPos;
+    std::string m_errorMsg;
 };
