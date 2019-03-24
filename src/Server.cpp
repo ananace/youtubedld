@@ -107,6 +107,11 @@ void Server::run()
     m_activePlaylist.getPipeline()->set_state(Gst::STATE_NULL);
 }
 
+void Server::pushEvent(const Protocols::Event& aEvent)
+{
+    m_eventQueue.push_back(aEvent);
+}
+
 bool Server::on_tick()
 {
     // Update protocols
@@ -130,7 +135,7 @@ bool Server::on_tick()
                 continue;
 
             for (auto& ev : m_eventQueue)
-                prot->post();
+                prot->post(ev);
         }
         m_eventQueue.clear();
     }

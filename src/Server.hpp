@@ -26,6 +26,8 @@ public:
 
     ActivePlaylist& getQueue() { return m_activePlaylist; }
 
+    void pushEvent(const Protocols::Event& aEvent);
+
 private:
     bool on_tick();
     bool on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage);
