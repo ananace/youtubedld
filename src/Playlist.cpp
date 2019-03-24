@@ -52,7 +52,7 @@ Playlist::SongArray::const_iterator Playlist::cbegin() const
 }
 Playlist::SongArray::const_iterator Playlist::cend() const
 {
-    return std::cbegin(m_songs);
+    return std::cend(m_songs);
 }
 Playlist::SongArray::iterator Playlist::begin()
 {
