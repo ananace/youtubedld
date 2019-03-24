@@ -72,6 +72,8 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
             ret = doCommands(aClient, aCommand); break;
         case CommandID_ping:
             ret = doPing(aClient, aCommand); break;
+        case CommandID_playid:
+            ret = doPlayid(aClient, aCommand, std::stoi(std::string(aArgs.front()))); break;
         case CommandID_plchanges:
             ret = doPlchanges(aClient, aCommand); break;
         case CommandID_status:
@@ -130,6 +132,15 @@ int MPDProto::doDecoders(uint32_t aClient, uint32_t aCommand)
 
 int MPDProto::doIdle(uint32_t aClient, uint32_t aCommand, uint16_t aFlags)
 {
+    if ((m_lastEvent & aFlags) != 0)
+    {
+        writeData(aClient, std::string("changed: ") + getIdleName(m_lastEvent) + "\n");
+
+        m_lastEvent = 0;
+        m_clientMap[aClient].IdleFlags = Idle_none;
+        return ACK_OK_SILENT;
+    }
+
     m_clientMap[aClient].IdleFlags = aFlags;
     return ACK_OK_SILENT;
 }
@@ -145,6 +156,16 @@ int MPDProto::doPing(uint32_t aClient, uint32_t aCommand)
     return ACK_OK;
 }
 
+int MPDProto::doPlayid(uint32_t aClient, uint32_t aCommand, int aId)
+{
+    auto& queue = getServer().getQueue();
+    // if (!queue.hasSongID(aId))
+    //     return ACK_ERROR_NO_EXIST;
+
+    queue.playSongID(aId);
+    return ACK_OK;
+}
+
 int MPDProto::doPlchanges(uint32_t aClient, uint32_t aCommand)
 {
     auto& queue = getServer().getQueue();
@@ -155,6 +176,7 @@ int MPDProto::doPlchanges(uint32_t aClient, uint32_t aCommand)
         std::ostringstream oss;
         oss << "file: " << song.URL << "\n"
             << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(song.Duration).count() << "\n"
+            << "Title: " << song.Title << "\n"
             << "Pos: " << i++ << "\n"
             << "Id: " << song.ID << "\n";
 
@@ -188,7 +210,7 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
     default:
         {
             std::string statestr = status == PS_Playing ? "play" : "pause";
-            auto& cursong = *queue.getSong();
+            auto& cursong = *queue.getCurrentSong();
             float seconds = std::chrono::duration<float>(queue.getElapsed()).count();
 
             oss << "state: " << statestr << "\n"

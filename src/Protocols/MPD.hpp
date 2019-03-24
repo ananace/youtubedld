@@ -65,7 +65,7 @@ public:
     void close();
 
     bool supportsPost() const { return true; }
-    void post(uint32_t aClient);
+    void post(const Protocols::Event& aEvent, uint32_t aClient);
     bool update();
 
 private:
@@ -112,16 +112,20 @@ private:
     int doIdle(uint32_t aClient, uint32_t aCommand, uint16_t aIdleFlags);
     int doNoidle(uint32_t aClient, uint32_t aCommand);
     int doPing(uint32_t aClient, uint32_t aCommand);
+    int doPlayid(uint32_t aClient, uint32_t aCommand, int aId);
     int doPlchanges(uint32_t aClient, uint32_t aCommand);
     int doStatus(uint32_t aClient, uint32_t aCommand);
     int doVolume(uint32_t aClient, uint32_t aCommand, int aChange);
 
     void writeData(uint32_t aClient, const std::string& aData);
 
+    std::string getIdleName(uint16_t aFlag);
+
     Util::EpollServer m_server;
     uint32_t m_clientCounter;
 
     std::unordered_map<uint32_t, Client> m_clientMap;
+    uint16_t m_lastEvent;
 };
 
 }

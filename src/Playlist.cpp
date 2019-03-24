@@ -82,6 +82,13 @@ bool Playlist::hasSong(const std::string& aSearch) const
         return it.URL == aSearch || it.Title == aSearch;
     }) != cend();
 }
+bool Playlist::hasSongID(size_t aId) const
+{
+    return std::find_if(cbegin(), cend(), [aId](auto& it) {
+        Util::Log(Util::Log_Debug) << "< " << it.ID << " == " << aId << " >";
+        return it.ID == aId;
+    }) != cend();
+}
 const Playlist::Song* Playlist::getSong(const std::string& aSearch) const
 {
     auto it = std::find_if(cbegin(), cend(), [aSearch](auto& it) {
@@ -89,7 +96,24 @@ const Playlist::Song* Playlist::getSong(const std::string& aSearch) const
     });
     if (it == cend())
         return nullptr;
-    return &*it;
+    return &(*it);
+}
+const Playlist::Song* Playlist::getSong(size_t aSong) const
+{
+    if (aSong < m_songs.size())
+        return &m_songs[aSong];
+    return nullptr;
+}
+const Playlist::Song* Playlist::getSongID(size_t aID) const
+{
+    Util::Log(Util::Log_Debug) << "< " << aID << " >  " << cbegin() - cbegin() << " " << cend() - cbegin();
+    auto it = std::find_if(cbegin(), cend(), [aID](auto& it) {
+        Util::Log(Util::Log_Debug) << "< " << it.ID << " == " << aID << " >";
+        return it.ID == aID;
+    });
+    if (it == cend())
+        return nullptr;
+    return &(*it);
 }
 const Playlist::Song& Playlist::addSong(const std::string& aUrl)
 {
@@ -112,6 +136,15 @@ void Playlist::removeSong(size_t aSong)
 {
     if (aSong < m_songs.size())
         m_songs.erase(cbegin() + aSong);
+}
+void Playlist::removeSongID(size_t aID)
+{
+    auto it = std::find_if(cbegin(), cend(), [aID](auto& it) {
+        return it.ID == aID;
+    });
+
+    if (it != cend())
+        m_songs.erase(it);
 }
 void Playlist::removeAllSongs()
 {
@@ -248,5 +281,10 @@ void Playlist::_updateSong(Song& aSong)
     aSong.DataHeaders = response.DownloadHeaders;
     aSong.UpdateTime = std::chrono::system_clock::now();
 
+    _updatedSong(aSong);
+}
+
+void Playlist::_updatedSong(const Song& aSong)
+{
     Util::Log(Util::Log_Debug) << "[Song] Received song information; Title=" << aSong.Title << " duration=" << aSong.Duration.count();
 }

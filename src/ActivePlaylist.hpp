@@ -31,6 +31,9 @@ public:
 
     Glib::RefPtr<Gst::Element> getPipeline() const;
 
+    void playSong(size_t aId);
+    void playSongID(size_t aId);
+
     void play();
     void stop();
     void pause();
@@ -38,8 +41,14 @@ public:
     void next();
     void previous();
 
+    const Song& addSong(const std::string& aUrl);
+    void removeSong(const std::string& aSearch);
+    void removeSong(size_t aSong);
+    void removeSongID(int aID);
+    void removeAllSongs();
+
     PlayStatus getStatus() const;
-    const Song* getSong() const;
+    const Song* getCurrentSong() const;
 
     std::chrono::nanoseconds getDuration() const;
     std::chrono::nanoseconds getElapsed() const;
@@ -64,8 +73,9 @@ public:
     bool isLive() const;
 
 private:
-    bool changeSong(Song* aSong, Gst::State aState);
-    Song* nextSong(Song* aCurSong);
+    void _updatedSong(const Song& aSong) override;
+    bool changeSong(const Song* aSong, Gst::State aState);
+    Song* nextSong(const Song* aCurSong);
 
     bool on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage);
     void on_about_to_finish();

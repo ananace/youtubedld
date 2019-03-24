@@ -59,10 +59,24 @@ void ActivePlaylist::update()
             m_currentSongPos = std::chrono::nanoseconds(pos);
     }
 }
-
 Glib::RefPtr<Gst::Element> ActivePlaylist::getPipeline() const
 {
     return m_playbin;
+}
+
+void ActivePlaylist::playSong(size_t aId)
+{
+    auto* song = getSong(aId);
+    if (song == nullptr)
+        return;
+    changeSong(song, Gst::STATE_PLAYING);
+}
+void ActivePlaylist::playSongID(size_t aId)
+{
+    auto* song = getSongID(aId);
+    if (song == nullptr)
+        return;
+    changeSong(song, Gst::STATE_PLAYING);
 }
 
 void ActivePlaylist::play()
@@ -79,7 +93,6 @@ void ActivePlaylist::play()
     }
 
     changeSong(&m_songs.front(), Gst::STATE_PLAYING);
-
 }
 void ActivePlaylist::stop()
 {
@@ -125,6 +138,33 @@ void ActivePlaylist::previous()
     // TODO
 }
 
+const Playlist::Song& ActivePlaylist::addSong(const std::string& aUrl)
+{
+    auto& ret = Playlist::addSong(aUrl);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
+    return ret;
+}
+void ActivePlaylist::removeSong(const std::string& aSearch)
+{
+    Playlist::removeSong(aSearch);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
+}
+void ActivePlaylist::removeSong(size_t aSong)
+{
+    Playlist::removeSong(aSong);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
+}
+void ActivePlaylist::removeSongID(int aID)
+{
+    Playlist::removeSongID(aID);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
+}
+void ActivePlaylist::removeAllSongs()
+{
+    Playlist::removeAllSongs();
+    m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
+}
+
 PlayStatus ActivePlaylist::getStatus() const
 {
     Gst::State state, pending;
@@ -142,7 +182,7 @@ PlayStatus ActivePlaylist::getStatus() const
     }
 }
 
-const Playlist::Song* ActivePlaylist::getSong() const
+const Playlist::Song* ActivePlaylist::getCurrentSong() const
 {
     return m_currentSong;
 }
@@ -176,6 +216,7 @@ void ActivePlaylist::setConsume(bool aConsume)
         m_playFlags |= uint8_t(PF_Consume);
     else
         m_playFlags &= uint8_t(~PF_Consume);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_OptionChange));
 }
 bool ActivePlaylist::hasRandom() const
 {
@@ -187,6 +228,7 @@ void ActivePlaylist::setRandom(bool aRandom)
         m_playFlags |= uint8_t(PF_Random);
     else
         m_playFlags &= uint8_t(~PF_Random);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_OptionChange));
 }
 bool ActivePlaylist::hasRepeat() const
 {
@@ -198,6 +240,7 @@ void ActivePlaylist::setRepeat(bool aRepeat)
         m_playFlags |= uint8_t(PF_Repeat);
     else
         m_playFlags &= uint8_t(~PF_Repeat);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_OptionChange));
 }
 bool ActivePlaylist::hasSingle() const
 {
@@ -209,6 +252,7 @@ void ActivePlaylist::setSingle(bool aSingle)
         m_playFlags |= uint8_t(PF_Single);
     else
         m_playFlags &= uint8_t(~PF_Single);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_OptionChange));
 }
 
 bool ActivePlaylist::hasError() const
@@ -236,7 +280,9 @@ float ActivePlaylist::getVolume() const
 }
 void ActivePlaylist::setVolume(float aVolume)
 {
+    aVolume = std::min(std::max(aVolume, 0.f), 1.f);
     m_playbin->set_property<double>("volume", aVolume);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_VolumeChange));
 }
 
 bool ActivePlaylist::isLive() const
@@ -244,7 +290,7 @@ bool ActivePlaylist::isLive() const
     return (m_playFlags & PF_Live) != 0;
 }
 
-bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
+bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
 {
     Util::Log(Util::Log_Debug) << "ChangeSong(" << aSong->URL << ", " << aState << ")";
 
@@ -263,7 +309,7 @@ bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
             m_currentSong->UpdateTime = std::chrono::system_clock::now();
     }
 
-    m_currentSong = aSong;
+    m_currentSong = const_cast<Song*>(aSong);
 
     if (m_currentSong)
     {
@@ -286,6 +332,8 @@ bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
     else
         m_playFlags &= ~PF_Live;
 
+    m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
+
     if (ret == Gst::STATE_CHANGE_FAILURE)
     {
         Util::Log(Util::Log_Error) << "Failed to play song";
@@ -295,7 +343,7 @@ bool ActivePlaylist::changeSong(Song* aSong, Gst::State aState)
     return true;
 }
 
-Playlist::Song* ActivePlaylist::nextSong(Song* aCurSong)
+Playlist::Song* ActivePlaylist::nextSong(const Song* aCurSong)
 {
     if (m_songs.empty())
         return nullptr;
@@ -370,6 +418,7 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
             Gst::State oldState, newState, pendingState;
             Glib::RefPtr<Gst::MessageStateChanged>::cast_static(aMessage)->parse(oldState, newState, pendingState);
 
+            m_server->pushEvent(Protocols::Event(Protocols::Event_StateChange));
             // Util::Log(Util::Log_Debug) << "State change " << oldState << " -> " << newState << " (-> " << pendingState << ")";
         }
         break;
@@ -457,4 +506,10 @@ void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Element>& aSource)
         aSource->set_property("automatic-redirect", true);
         aSource->set_property("ssl-strict", false);
     }
+}
+
+void ActivePlaylist::_updatedSong(const Song& aSong)
+{
+    Playlist::_updatedSong(aSong);
+    m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }

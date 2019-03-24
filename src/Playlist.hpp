@@ -49,14 +49,16 @@ public:
     size_t size() const;
     size_t indexOf(const Song& aSong) const;
 
-    bool hasSongID(int aID) const;
+    bool hasSongID(size_t aID) const;
     bool hasSong(const std::string& aSearch) const;
     const Song* getSong(const std::string& aSearch) const;
-    const Song& addSong(const std::string& aUrl);
-    void removeSong(const std::string& aSearch);
-    void removeSong(size_t aSong);
-    void removeSongID(int aID);
-    void removeAllSongs();
+    const Song* getSong(size_t aSong) const;
+    const Song* getSongID(size_t aID) const;
+    virtual const Song& addSong(const std::string& aUrl);
+    virtual void removeSong(const std::string& aSearch);
+    virtual void removeSong(size_t aSong);
+    virtual void removeSongID(size_t aID);
+    virtual void removeAllSongs();
 
     virtual void update();
 
@@ -69,6 +71,7 @@ protected:
     Song& _addSong(const Song& aSong);
     Song& _addSong(const std::string& aUrl);
     void _updateSong(Song& aSong);
+    virtual void _updatedSong(const Song& aSong);
 
     SongArray m_songs;
     size_t m_songCounter;

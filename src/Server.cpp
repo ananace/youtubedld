@@ -46,7 +46,7 @@ void Server::init(int aArgc, const char** aArgv)
     }
 
     m_mainLoop = Glib::MainLoop::create();
-    m_ticker = Glib::signal_timeout().connect(sigc::mem_fun(*this, &Server::on_tick), 500);
+    m_ticker = Glib::signal_timeout().connect(sigc::mem_fun(*this, &Server::on_tick), 100);
 
     m_activePlaylist.init(*this);
 
@@ -117,8 +117,8 @@ bool Server::on_tick()
     // Update protocols
     for (auto& prot : m_activeProtocols)
     {
-        for (int i = 0; prot->update() && i < 10; ++i)
-            ; // Update up to 10 times in a row
+        for (int i = 0; prot->update() && i < 5; ++i)
+            ; // Update up to 5 times in a row
 
         Protocols::Event ev;
         while (prot->poll(ev))
