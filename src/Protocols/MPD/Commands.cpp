@@ -176,8 +176,14 @@ int MPDProto::doPlchanges(uint32_t aClient, uint32_t aCommand)
         std::ostringstream oss;
         oss << "file: " << song.URL << "\n"
             << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(song.Duration).count() << "\n"
-            << "Title: " << song.Title << "\n"
-            << "Pos: " << i++ << "\n"
+            << "Title: " << song.Title << "\n";
+
+        if (song.hasArtist())
+            oss << "Artist: " << song.getArtist() << "\n";
+        if (song.hasAlbum())
+            oss << "Album: " << song.getAlbum() << "\n";
+
+        oss << "Pos: " << i++ << "\n"
             << "Id: " << song.ID << "\n";
 
         writeData(aClient, oss.str());
