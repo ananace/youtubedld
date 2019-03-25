@@ -35,6 +35,23 @@ bool Playlist::Song::isLocal() const
     return urlView[0] == '/' || urlView.find("file://") == 0 || urlView.find("://") == std::string::npos;
 }
 
+bool Playlist::Song::hasArtist() const
+{
+    return Tags.count("ARTIST") > 0;
+}
+const std::string& Playlist::Song::getArtist() const
+{
+    return Tags.at("ARTIST");
+}
+bool Playlist::Song::hasAlbum() const
+{
+    return Tags.count("ALBUM") > 0;
+}
+const std::string& Playlist::Song::getAlbum() const
+{
+    return Tags.at("ALBUM");
+}
+
 Playlist::Playlist()
     : m_songCounter(0)
 {

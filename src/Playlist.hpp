@@ -30,6 +30,11 @@ public:
 
         bool isDirect() const;
         bool isLocal() const;
+
+        bool hasArtist() const;
+        const std::string& getArtist() const;
+        bool hasAlbum() const;
+        const std::string& getAlbum() const;
     };
 
     using SongArray = std::vector<Song>;
