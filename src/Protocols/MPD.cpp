@@ -89,7 +89,9 @@ bool MPDProto::update()
 {
     bool handled = false;
     epoll_event ev;
-    for (int i = 0; i < 10 && m_server.pollEvent(ev); ++i)
+
+    // Run data reading multiple times, to aviod leaving data in the buffers
+    for (int i = 0; i < 4 && m_server.pollEvent(ev); ++i)
     {
         if (ev.events & EPOLLRDHUP)
         {
@@ -149,75 +151,75 @@ bool MPDProto::update()
                 }
             } while(len > 0);
         }
+    }
 
-        std::deque<MPDMessage> messages;
-        // Generate messages
-        if (!m_clientMap.empty())
+    // Generate messages
+    std::deque<MPDMessage> messages;
+    if (!m_clientMap.empty())
+    {
+        for (auto& cl : m_clientMap)
         {
-            for (auto& cl : m_clientMap)
+            if (cl.second.Buffer.empty())
+                continue;
+
+            auto cmdTokeniser = Util::LineTokeniser(cl.second.Buffer);
+            for (auto& commandLine : cmdTokeniser)
             {
-                if (cl.second.Buffer.empty())
-                    continue;
+                // if (commandLine.empty())
+                //     continue;
 
-                auto cmdTokeniser = Util::LineTokeniser(cl.second.Buffer);
-                for (auto& commandLine : cmdTokeniser)
+                if (commandLine.back() == '\r')
+                    commandLine.remove_suffix(1);
+
+                auto argTokeniser = Util::SpaceTokeniser(commandLine);
+                auto it = argTokeniser.cbegin();
+
+                auto command = *it++;
+                std::vector<std::string_view> arguments;
+                std::string_view carry;
+                for (; it != argTokeniser.cend(); ++it)
                 {
-                    // if (commandLine.empty())
-                    //     continue;
-
-                    if (commandLine.back() == '\r')
-                        commandLine.remove_suffix(1);
-
-                    auto argTokeniser = Util::SpaceTokeniser(commandLine);
-                    auto it = argTokeniser.cbegin();
-
-                    auto command = *it++;
-                    std::vector<std::string_view> arguments;
-                    std::string_view carry;
-                    for (; it != argTokeniser.cend(); ++it)
+                    auto& cur = *it;
+                    if (cur.front() == '"' && cur.back() == '"')
+                        cur = cur.substr(1, cur.size() - 2);
+                    else if (cur.front() == '"')
                     {
-                        auto& cur = *it;
-                        if (cur.front() == '"' && cur.back() == '"')
-                            cur = cur.substr(1, cur.size() - 2);
-                        else if (cur.front() == '"')
-                        {
-                            cur.remove_prefix('"');
-                            carry = cur;
-                            continue;
-                        }
-                        else if (cur.back() == '"')
-                        {
-                            cur.remove_suffix('"');
-                            arguments.push_back(std::string_view(carry.data(), carry.length() + cur.length() + 1));
-                            continue;
-                        }
-
-                        arguments.push_back(cur);
+                        cur.remove_prefix('"');
+                        carry = cur;
+                        continue;
+                    }
+                    else if (cur.back() == '"')
+                    {
+                        cur.remove_suffix('"');
+                        arguments.push_back(std::string_view(carry.data(), carry.length() + cur.length() + 1));
+                        continue;
                     }
 
-                    const CommandDefinition* cmd = nullptr;
-                    auto cit = std::find_if(std::cbegin(AvailableCommands), std::cend(AvailableCommands), [command](const auto& def) { return command == def.Name; });
-                    if (cit != std::cend(AvailableCommands))
-                        cmd = &(*cit);
-
-                    messages.push_back(MPDMessage{
-                        cl.first,
-                        std::string(commandLine),
-                        cmd,
-                        std::move(arguments)
-                    });
+                    arguments.push_back(cur);
                 }
 
-                cl.second.Buffer = cl.second.Buffer.substr(cl.second.Buffer.find_last_of('\n') + 1);
-            }
-        }
+                const CommandDefinition* cmd = nullptr;
+                auto cit = std::find_if(std::cbegin(AvailableCommands), std::cend(AvailableCommands), [command](const auto& def) { return command == def.Name; });
+                if (cit != std::cend(AvailableCommands))
+                    cmd = &(*cit);
 
-        // Handle messages
-        for (auto& msg : messages)
-            handleMessage(&msg, false);
-        if (!messages.empty())
-            handled = true;
+                messages.push_back(MPDMessage{
+                    cl.first,
+                    std::string(commandLine),
+                    cmd,
+                    std::move(arguments)
+                });
+            }
+
+            cl.second.Buffer = cl.second.Buffer.substr(cl.second.Buffer.find_last_of('\n') + 1);
+        }
     }
+
+    // Handle messages
+    for (auto& msg : messages)
+        handleMessage(&msg, false);
+    if (!messages.empty())
+        handled = true;
 
     return handled;
 }
