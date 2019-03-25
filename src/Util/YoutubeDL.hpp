@@ -10,6 +10,7 @@ struct YoutubeDLRequest
 
     bool ExtractAudio;
     std::string AudioFormat;
+    std::string VideoFormat;
 };
 
 struct YoutubeDLResponse
@@ -17,8 +18,9 @@ struct YoutubeDLResponse
     bool Success;
 
     uint32_t Duration;
-    std::string DownloadUrl;
     std::string Title;
+    std::string DownloadUrl;
+    std::string ThumbnailUrl;
     std::unordered_map<std::string, std::string> DownloadHeaders;
 };
 

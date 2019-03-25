@@ -135,6 +135,10 @@ YoutubeDLResponse YoutubeDL::download(const YoutubeDLRequest& aRequest)
         oss << std::quoted(aRequest.Url, '\'') << " ";
     }
 
+    if (!aRequest.VideoFormat.empty())
+        oss << "--format=" << aRequest.VideoFormat << " ";
+    else
+        oss << "--format=bestaudio ";
     if (aRequest.ExtractAudio)
         oss << "--extract-audio ";
     if (!aRequest.AudioFormat.empty())
@@ -185,7 +189,42 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
     try
     {
         auto data = nlohmann::json::parse(ret);
-        return { true, data["duration"], data["formats"][0]["url"], data["title"], data["formats"][0]["http_headers"] };
+        auto response = YoutubeDLResponse{ true, data["duration"], data["title"], data["thumbnail"] };
+        nlohmann::json chosenFormat = { { "tbr", -1.0 } };
+
+        // Direct format match
+        if (data.count("url") > 0)
+        {
+            chosenFormat = data;
+        }
+        else
+        {
+            nlohmann::json formats;
+            // Multiple format match
+            if (data.count("requested_formats") > 0)
+            {
+                formats = data["requested_formats"];
+            }
+            // No format match, iterate all available formats
+            else
+            {
+                formats = data["formats"];
+            }
+
+            for (auto& format : formats)
+            {
+                if (format["vcodec"] != "none")
+                    continue;
+
+                if (format["tbr"].get<double>() > chosenFormat["tbr"].get<double>())
+                    chosenFormat = format;
+            }
+        }
+
+        response.DownloadUrl = chosenFormat["url"];
+        response.DownloadHeaders = std::unordered_map<std::string, std::string>(chosenFormat["http_headers"]);
+
+        return response;
     }
     catch(const std::exception& ex)
     {
