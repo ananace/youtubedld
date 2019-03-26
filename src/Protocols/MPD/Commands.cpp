@@ -132,12 +132,14 @@ int MPDProto::doDecoders(uint32_t aClient, uint32_t aCommand)
 
 int MPDProto::doIdle(uint32_t aClient, uint32_t aCommand, uint16_t aFlags)
 {
-    if ((m_lastEvent & aFlags) != 0)
+    auto& cl = m_clientMap[aClient];
+    uint16_t triggered;
+    if ((triggered = (cl.ActiveIdleFlags & aFlags)) != 0)
     {
-        writeData(aClient, std::string("changed: ") + getIdleName(m_lastEvent) + "\n");
+        writeData(aClient, std::string("changed: ") + getIdleName(triggered) + "\n");
 
-        m_lastEvent = 0;
         m_clientMap[aClient].IdleFlags = Idle_none;
+        m_clientMap[aClient].ActiveIdleFlags &= ~aFlags;
         return ACK_OK_SILENT;
     }
 

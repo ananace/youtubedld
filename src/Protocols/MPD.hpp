@@ -75,7 +75,7 @@ private:
         int UserFlags;
         std::string Buffer;
         std::chrono::system_clock::time_point LastActivity;
-        uint16_t IdleFlags;
+        uint16_t IdleFlags, ActiveIdleFlags;
         bool InCmdList, CmdListVerbose;
         std::deque<void*> CmdList;
 
@@ -83,6 +83,7 @@ private:
             : Socket(0)
             , UserFlags(0)
             , IdleFlags(0)
+            , ActiveIdleFlags(0)
             , InCmdList(false)
             , CmdListVerbose(false)
         { }
@@ -90,6 +91,7 @@ private:
             : Socket(aSocket)
             , UserFlags(0)
             , IdleFlags(0)
+            , ActiveIdleFlags(0)
             , InCmdList(false)
             , CmdListVerbose(false)
         { }
@@ -125,7 +127,6 @@ private:
     uint32_t m_clientCounter;
 
     std::unordered_map<uint32_t, Client> m_clientMap;
-    uint16_t m_lastEvent;
 };
 
 }

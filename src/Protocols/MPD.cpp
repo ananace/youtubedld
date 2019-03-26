@@ -29,7 +29,6 @@ struct MPDMessage
 MPDProto::MPDProto(uint16_t port)
     : m_server(port)
     , m_clientCounter(Client_None)
-    , m_lastEvent(0)
 {
 }
 
@@ -71,17 +70,15 @@ void MPDProto::post(const Protocols::Event& aEv, uint32_t aClient)
     if (triggeredIdleFlag == 0)
         return;
 
-    m_lastEvent = triggeredIdleFlag;
     std::string idleFlagName = getIdleName(triggeredIdleFlag);
-
     Util::Log(Util::Log_Debug) << "[MPD] Posting event about " << idleFlagName;
 
     for (auto& it : m_clientMap)
     {
         if ((it.second.IdleFlags & triggeredIdleFlag) != 0)
-        {
             writeData(it.first, "changed: " + idleFlagName + "\n");
-        }
+        else
+            it.second.ActiveIdleFlags |= triggeredIdleFlag;
     }
 }
 
