@@ -19,8 +19,8 @@ struct YoutubeDLResponse
 
     uint32_t Duration;
     std::string Title;
-    std::string DownloadUrl;
     std::string ThumbnailUrl;
+    std::string DownloadUrl;
     std::unordered_map<std::string, std::string> DownloadHeaders;
 };
 

@@ -293,8 +293,9 @@ void Playlist::_updateSong(Song& aSong)
     auto response = ydl.request({ aSong.URL });
 
     aSong.Duration = std::chrono::seconds(response.Duration);
-    aSong.DataURL = response.DownloadUrl;
     aSong.Title = response.Title;
+    aSong.ThumbnailURL = response.ThumbnailUrl;
+    aSong.DataURL = response.DownloadUrl;
     aSong.DataHeaders = response.DownloadHeaders;
     aSong.UpdateTime = std::chrono::system_clock::now();
 
