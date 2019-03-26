@@ -23,6 +23,8 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
         case CommandID_add:
         case CommandID_addid:
             ret = doAdd(aClient, aCommand, std::string(aArgs.front())); break;
+        case CommandID_clearerror:
+            ret = doClearerror(aClient, aCommand); break;
         case CommandID_commands:
             ret = doCommands(aClient, aCommand); break;
         case CommandID_command_list_begin:
@@ -70,8 +72,11 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
             ret = doNoidle(aClient, aCommand); break;
         case CommandID_notcommands:
             ret = doCommands(aClient, aCommand); break;
+        case CommandID_pause:
+            ret = doPause(aClient, aCommand, std::stoi(std::string(aArgs.front())) == 1); break;
         case CommandID_ping:
             ret = doPing(aClient, aCommand); break;
+        case CommandID_play:
         case CommandID_playid:
             ret = doPlayid(aClient, aCommand, std::stoi(std::string(aArgs.front()))); break;
         case CommandID_plchanges:
@@ -94,6 +99,11 @@ int MPDProto::doAdd(uint32_t aClient, uint32_t aCommand, const std::string& aUrl
     auto ret = getServer().getQueue().addSong(aUrl);
     if (AvailableCommands[aCommand].Name == "addid")
         writeData(aClient, "Id: " + std::to_string(ret.ID) + "\n");
+    return ACK_OK;
+}
+int MPDProto::doClearerror(uint32_t aClient, uint32_t aCommand)
+{
+    getServer().getQueue().clearError();
     return ACK_OK;
 }
 int MPDProto::doClose(uint32_t aClient, uint32_t aCommand)
@@ -123,6 +133,16 @@ int MPDProto::doConsume(uint32_t aClient, uint32_t aCommand, bool aConsume)
 }
 int MPDProto::doCurrentsong(uint32_t aClient, uint32_t aCommand)
 {
+    auto& queue = getServer().getQueue();
+    auto& cursong = *queue.getCurrentSong();
+    float seconds = std::chrono::duration<float>(queue.getElapsed()).count();
+
+    std::ostringstream oss;
+    oss << "song: " << queue.indexOf(cursong) << "\n"
+        << "songid: " << cursong.ID << "\n"
+        << "time: " << int(seconds) << ":" << std::chrono::duration_cast<std::chrono::seconds>(cursong.Duration).count() << "\n"
+        << "elapsed: " << seconds << "\n";
+
     return ACK_OK;
 }
 int MPDProto::doDecoders(uint32_t aClient, uint32_t aCommand)
@@ -153,6 +173,21 @@ int MPDProto::doNoidle(uint32_t aClient, uint32_t aCommand)
     return ACK_OK;
 }
 
+int MPDProto::doPause(uint32_t aClient, uint32_t aCommand, bool aPause)
+{
+    auto& queue = getServer().getQueue();
+
+    if (aPause)
+        queue.pause();
+    else
+    {
+        queue.clearError();
+        queue.resume();
+    }
+
+    return ACK_OK;
+}
+
 int MPDProto::doPing(uint32_t aClient, uint32_t aCommand)
 {
     return ACK_OK;
@@ -161,9 +196,18 @@ int MPDProto::doPing(uint32_t aClient, uint32_t aCommand)
 int MPDProto::doPlayid(uint32_t aClient, uint32_t aCommand, int aId)
 {
     auto& queue = getServer().getQueue();
-    // if (!queue.hasSongID(aId))
-    //     return ACK_ERROR_NO_EXIST;
+    if (AvailableCommands[aCommand].Name == "play")
+    {
+        if (aId >= queue.size())
+            throw MPDError(ACK_ERROR_ARG, AvailableCommands[aCommand].Name, "invalid song number");
 
+        aId = queue.getSong(aId)->ID;
+    }
+
+    if (!queue.hasSongID(aId))
+        throw MPDError(ACK_ERROR_NO_EXIST, AvailableCommands[aCommand].Name, "song does not exist");
+
+    queue.clearError();
     queue.playSongID(aId);
     return ACK_OK;
 }
@@ -218,21 +262,14 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
     default:
         {
             std::string statestr = status == PS_Playing ? "play" : "pause";
-            auto& cursong = *queue.getCurrentSong();
-            float seconds = std::chrono::duration<float>(queue.getElapsed()).count();
-
-            oss << "state: " << statestr << "\n"
-                << "song: " << queue.indexOf(cursong) << "\n"
-                << "songid: " << cursong.ID << "\n"
-                << "time: " << int(seconds) << ":" << std::chrono::duration_cast<std::chrono::seconds>(cursong.Duration).count() << "\n"
-                << "elapsed: " << seconds << "\n";
+            oss << "state: " << statestr << "\n";
+            doCurrentsong(aClient, aCommand);
         }
     }
 
     if (queue.hasError())
     {
         oss << "error: " << queue.getError() << "\n";
-        queue.clearError();
     }
 
     writeData(aClient, oss.str());
