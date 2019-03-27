@@ -41,6 +41,9 @@ public:
     void next();
     void previous();
 
+    const Song* nextSong(const Song* aCurSong);
+    const Song* previousSong(const Song* aCurSong);
+
     const Song& addSong(const std::string& aUrl);
     void removeSong(const std::string& aSearch);
     void removeSong(size_t aSong);
@@ -73,9 +76,11 @@ public:
     bool isLive() const;
 
 private:
-    void _updatedSong(const Song& aSong) override;
+    void _addedSong(Song& aSong) override;
+    void _updatedSong(Song& aSong) override;
     bool changeSong(const Song* aSong, Gst::State aState);
-    Song* nextSong(const Song* aCurSong);
+    void resetQueue();
+    void shuffleQueue();
 
     bool on_bus_message(const Glib::RefPtr<Gst::Bus>& aBus, const Glib::RefPtr<Gst::Message>& aMessage);
     void on_about_to_finish();
@@ -87,5 +92,6 @@ private:
     uint8_t m_playFlags;
     Song* m_currentSong;
     std::chrono::nanoseconds m_currentSongDur, m_currentSongPos;
+    std::deque<Song*> m_playQueue;
     std::string m_errorMsg;
 };

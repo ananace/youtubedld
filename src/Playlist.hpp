@@ -14,6 +14,7 @@ public:
     {
         std::string URL;
         size_t ID;
+        int Priority;
 
         std::string DataURL;
         std::unordered_map<std::string, std::string> DataHeaders;
@@ -35,6 +36,18 @@ public:
         const std::string& getArtist() const;
         bool hasAlbum() const;
         const std::string& getAlbum() const;
+
+        Song()
+            : ID(0)
+            , Priority(0)
+            , Direct(false)
+        { }
+        Song(const std::string& aUrl)
+            : URL(aUrl)
+            , ID(0)
+            , Priority(0)
+            , Direct(false)
+        { }
     };
 
     using SongArray = std::vector<Song>;
@@ -73,10 +86,11 @@ public:
     bool saveToFile(const std::string& aPath) const;
 
 protected:
+    virtual void _addedSong(Song& aSong);
+    virtual void _updatedSong(Song& aSong);
     Song& _addSong(const Song& aSong);
     Song& _addSong(const std::string& aUrl);
     void _updateSong(Song& aSong);
-    virtual void _updatedSong(const Song& aSong);
 
     SongArray m_songs;
     size_t m_songCounter;

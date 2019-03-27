@@ -271,6 +271,8 @@ Playlist::Song& Playlist::_addSong(const std::string& aUrl)
         added.NextUpdateTime = std::chrono::system_clock::now() + 24h;
     }
 
+    _addedSong(added);
+
     return added;
 }
 
@@ -278,9 +280,15 @@ Playlist::Song& Playlist::_addSong(const Song& aSong)
 {
     m_songs.push_back(aSong);
     auto& added = m_songs.back();
-
     added.ID = m_songCounter++;
+
+    _addedSong(added);
+
     return added;
+}
+
+void Playlist::_addedSong(Song& aSong)
+{
 }
 
 void Playlist::_updateSong(Song& aSong)
@@ -302,7 +310,7 @@ void Playlist::_updateSong(Song& aSong)
     _updatedSong(aSong);
 }
 
-void Playlist::_updatedSong(const Song& aSong)
+void Playlist::_updatedSong(Song& aSong)
 {
     Util::Log(Util::Log_Debug) << "[Song] Received song information; Title=" << aSong.Title << " duration=" << aSong.Duration.count();
 }

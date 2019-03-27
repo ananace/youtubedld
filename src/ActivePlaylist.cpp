@@ -225,9 +225,19 @@ bool ActivePlaylist::hasRandom() const
 void ActivePlaylist::setRandom(bool aRandom)
 {
     if (aRandom)
+    {
+        if ((m_playFlags & uint8_t(PF_Random)) == 0)
+            shuffleQueue();
+
         m_playFlags |= uint8_t(PF_Random);
+    }
     else
+    {
+        if ((m_playFlags & uint8_t(PF_Random)) != 0)
+            resetQueue();
+
         m_playFlags &= uint8_t(~PF_Random);
+    }
     m_server->pushEvent(Protocols::Event(Protocols::Event_OptionChange));
 }
 bool ActivePlaylist::hasRepeat() const
@@ -300,8 +310,10 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
 
         if (hasConsume())
         {
+            m_playQueue.erase(std::find(m_playQueue.begin(), m_playQueue.end(), m_currentSong));
             m_songs.erase(std::find_if(m_songs.begin(), m_songs.end(), [this](auto& it) { return m_currentSong == &it; }));
-            if (m_songs.empty())
+
+            if (m_playQueue.empty())
                 m_currentSong = nullptr;
         }
         // Refresh stream URL if song is not local
@@ -343,41 +355,46 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
     return true;
 }
 
-Playlist::Song* ActivePlaylist::nextSong(const Song* aCurSong)
+const Playlist::Song* ActivePlaylist::nextSong(const Song* aCurSong)
 {
-    if (m_songs.empty())
+    if (m_playQueue.empty())
         return nullptr;
 
-    if (hasRandom())
-    {
-        // TODO: Shuffle instead?
-        std::random_device dev;
-        std::uniform_int_distribution<size_t> track(0, m_songs.size());
-
-        Song* newSong = nullptr;
-
-        do
-        {
-            newSong = &m_songs.at(track(dev));
-        } while(newSong == aCurSong);
-
-        return newSong;
-    }
-
-    auto curSongIt = std::find_if(m_songs.begin(), m_songs.end(), [aCurSong](auto& it) { return aCurSong == &it; });
+    auto curSongIt = std::find(m_playQueue.begin(), m_playQueue.end(), aCurSong);
     // Should hopefully never happen, but let's be on the safe side
-    if (curSongIt == m_songs.end())
-        curSongIt = m_songs.begin();
+    if (curSongIt == m_playQueue.end())
+        curSongIt = m_playQueue.begin();
 
     auto nextSongIt = curSongIt + 1;
-    if (nextSongIt == m_songs.end())
+    if (nextSongIt == m_playQueue.end())
     {
         if (hasRepeat())
-            return &m_songs.front();
+            return m_playQueue.front();
         return nullptr;
     }
 
-    return &(*nextSongIt);
+    return *nextSongIt;
+}
+
+const Playlist::Song* ActivePlaylist::previousSong(const Song* aCurSong)
+{
+    if (m_playQueue.empty())
+        return nullptr;
+
+    auto curSongIt = std::find(m_playQueue.begin(), m_playQueue.end(), aCurSong);
+    // Should hopefully never happen, but let's be on the safe side
+    if (curSongIt == m_playQueue.begin())
+        curSongIt = m_playQueue.end() - 1;
+
+    auto nextSongIt = curSongIt - 1;
+    if (nextSongIt == m_playQueue.begin())
+    {
+        if (hasRepeat())
+            return m_playQueue.back();
+        return nullptr;
+    }
+
+    return *nextSongIt;
 }
 
 bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, const Glib::RefPtr<Gst::Message>& aMessage)
@@ -508,8 +525,34 @@ void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Element>& aSource)
     }
 }
 
-void ActivePlaylist::_updatedSong(const Song& aSong)
+void ActivePlaylist::_addedSong(Song& aSong)
+{
+    Playlist::_addedSong(aSong);
+
+    if (hasRandom())
+    {
+        std::random_device dev;
+        std::uniform_int_distribution<int> dist(0, m_playQueue.size());
+        auto it = m_playQueue.begin() + dist(dev);
+        m_playQueue.insert(it, &aSong);
+    }
+    else
+        m_playQueue.push_back(&aSong);
+}
+
+void ActivePlaylist::_updatedSong(Song& aSong)
 {
     Playlist::_updatedSong(aSong);
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
+}
+
+void ActivePlaylist::resetQueue()
+{
+    m_playQueue.clear();
+    for (auto& song : *this)
+        m_playQueue.push_back(&song);
+}
+void ActivePlaylist::shuffleQueue()
+{
+    std::shuffle(m_playQueue.begin(), m_playQueue.end(), std::random_device());
 }
