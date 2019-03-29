@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <future>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -27,6 +28,8 @@ public:
         std::chrono::system_clock::time_point UpdateTime;
         std::chrono::system_clock::time_point NextUpdateTime;
 
+        std::future<bool> UpdateTask;
+
         bool Direct;
 
         bool isDirect() const;
@@ -37,17 +40,13 @@ public:
         bool hasAlbum() const;
         const std::string& getAlbum() const;
 
-        Song()
-            : ID(0)
-            , Priority(0)
-            , Direct(false)
-        { }
-        Song(const std::string& aUrl)
-            : URL(aUrl)
-            , ID(0)
-            , Priority(0)
-            , Direct(false)
-        { }
+        Song();
+        Song(const Song& aSong);
+        Song(Song&& aSong);
+        Song(const std::string& aUrl);
+
+        Song& operator=(const Song& aRhs);
+        Song& operator=(Song&& aRhs);
     };
 
     using SongArray = std::vector<Song>;
@@ -90,6 +89,7 @@ protected:
     virtual void _updatedSong(Song& aSong);
     Song& _addSong(const Song& aSong);
     Song& _addSong(const std::string& aUrl);
+    void _queueUpdateSong(Song& aSong);
     void _updateSong(Song& aSong);
 
     SongArray m_songs;

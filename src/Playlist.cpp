@@ -24,6 +24,88 @@ using namespace std::chrono_literals;
 // TODO: Place somewhere more reasonable?
 Util::WorkQueue s_songUpdateQueue;
 
+Playlist::Song::Song()
+    : ID(0)
+    , Priority(0)
+    , Direct(false)
+{ }
+Playlist::Song::Song(const Song& aSong)
+    : URL(aSong.URL)
+    , ID(aSong.ID)
+    , Priority(aSong.Priority)
+    , DataURL(aSong.DataURL)
+    , DataHeaders(aSong.DataHeaders)
+    , ThumbnailURL(aSong.ThumbnailURL)
+    , Title(aSong.Title)
+    , Tags(aSong.Tags)
+    , Duration(aSong.Duration)
+    , UpdateTime(aSong.UpdateTime)
+    , NextUpdateTime(aSong.NextUpdateTime)
+    , Direct(aSong.Direct)
+{ }
+Playlist::Song::Song(Song&& aSong)
+    : URL(std::move(aSong.URL))
+    , ID(std::move(aSong.ID))
+    , Priority(std::move(aSong.Priority))
+    , DataURL(std::move(aSong.DataURL))
+    , DataHeaders(std::move(aSong.DataHeaders))
+    , ThumbnailURL(std::move(aSong.ThumbnailURL))
+    , Title(std::move(aSong.Title))
+    , Tags(std::move(aSong.Tags))
+    , Duration(std::move(aSong.Duration))
+    , UpdateTime(std::move(aSong.UpdateTime))
+    , NextUpdateTime(std::move(aSong.NextUpdateTime))
+    , UpdateTask(std::move(aSong.UpdateTask))
+    , Direct(std::move(aSong.Direct))
+{ }
+Playlist::Song::Song(const std::string& aUrl)
+    : URL(aUrl)
+    , ID(0)
+    , Priority(0)
+    , Direct(false)
+{ }
+
+Playlist::Song& Playlist::Song::operator=(const Song& aRhs)
+{
+    if (&aRhs == this)
+        return *this;
+
+    URL = aRhs.URL;
+    ID = aRhs.ID;
+    Priority = aRhs.Priority;
+    DataURL = aRhs.DataURL;
+    DataHeaders = aRhs.DataHeaders;
+    ThumbnailURL = aRhs.ThumbnailURL;
+    Title = aRhs.Title;
+    Tags = aRhs.Tags;
+    Duration = aRhs.Duration;
+    UpdateTime = aRhs.UpdateTime;
+    NextUpdateTime = aRhs.NextUpdateTime;
+    Direct = aRhs.Direct;
+
+    return *this;
+}
+Playlist::Song& Playlist::Song::operator=(Song&& aRhs)
+{
+    if (&aRhs == this)
+        return *this;
+
+    URL = std::move(aRhs.URL);
+    ID = std::move(aRhs.ID);
+    Priority = std::move(aRhs.Priority);
+    DataURL = std::move(aRhs.DataURL);
+    DataHeaders = std::move(aRhs.DataHeaders);
+    ThumbnailURL = std::move(aRhs.ThumbnailURL);
+    Title = std::move(aRhs.Title);
+    Tags = std::move(aRhs.Tags);
+    Duration = std::move(aRhs.Duration);
+    UpdateTime = std::move(aRhs.UpdateTime);
+    NextUpdateTime = std::move(aRhs.NextUpdateTime);
+    UpdateTask = std::move(aRhs.UpdateTask);
+    Direct = std::move(aRhs.Direct);
+
+    return *this;
+}
 bool Playlist::Song::isDirect() const
 {
     return isLocal() || Direct;
@@ -102,7 +184,6 @@ bool Playlist::hasSong(const std::string& aSearch) const
 bool Playlist::hasSongID(size_t aId) const
 {
     return std::find_if(cbegin(), cend(), [aId](auto& it) {
-        Util::Log(Util::Log_Debug) << "< " << it.ID << " == " << aId << " >";
         return it.ID == aId;
     }) != cend();
 }
@@ -123,9 +204,7 @@ const Playlist::Song* Playlist::getSong(size_t aSong) const
 }
 const Playlist::Song* Playlist::getSongID(size_t aID) const
 {
-    Util::Log(Util::Log_Debug) << "< " << aID << " >  " << cbegin() - cbegin() << " " << cend() - cbegin();
     auto it = std::find_if(cbegin(), cend(), [aID](auto& it) {
-        Util::Log(Util::Log_Debug) << "< " << it.ID << " == " << aID << " >";
         return it.ID == aID;
     });
     if (it == cend())
@@ -177,17 +256,7 @@ void Playlist::update()
         if (it.NextUpdateTime > now)
             continue;
 
-        if (!it.isDirect())
-        {
-            s_songUpdateQueue.queueTask<void>([this,&it]() { _updateSong(it); });
-
-            it.NextUpdateTime = now + 1h;
-        }
-        else
-        {
-            it.UpdateTime = now;
-            it.NextUpdateTime = now + 24h;
-        }
+        _queueUpdateSong(it);
     }
 }
 
@@ -289,6 +358,23 @@ Playlist::Song& Playlist::_addSong(const Song& aSong)
 
 void Playlist::_addedSong(Song& aSong)
 {
+}
+
+
+void Playlist::_queueUpdateSong(Song& aSong)
+{
+    auto now = std::chrono::system_clock::now();
+
+    if (!aSong.isDirect())
+    {
+        aSong.UpdateTask = s_songUpdateQueue.queueTask<bool>([this,&aSong]() { _updateSong(aSong); return true; });
+        aSong.NextUpdateTime = now + 1h;
+    }
+    else
+    {
+        aSong.UpdateTime = now;
+        aSong.NextUpdateTime = now + 24h;
+    }
 }
 
 void Playlist::_updateSong(Song& aSong)

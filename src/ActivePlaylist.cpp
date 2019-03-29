@@ -342,10 +342,17 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
 
         Util::Log(Util::Log_Debug) << "- setting up new song (" << m_currentSong->URL << ")";
 
-        // TODO: Join work queue if YDL job is running
+        if (m_currentSong->NextUpdateTime >= std::chrono::system_clock::now())
+            _queueUpdateSong(*m_currentSong);
 
-        // if (m_currentSong->UpdateTime >= std::chrono::system_clock::now())
-        //     return false; // Force retest?
+        // Wait for the current song update to finish before playing it
+        // TODO: timeout and handle that correctly
+        if (m_currentSong->UpdateTask.valid())
+        {
+            Util::Log(Util::Log_Debug) << "- Task is available, waiting for it";
+            m_currentSong->UpdateTask.wait();
+            Util::Log(Util::Log_Debug) << "- Task finished";
+        }
 
         auto uri = m_currentSong->DataURL;
         if (uri.empty())
