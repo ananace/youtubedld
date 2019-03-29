@@ -113,11 +113,13 @@ private:
     int doCurrentsong(uint32_t aClient, uint32_t aCommand);
     int doDecoders(uint32_t aClient, uint32_t aCommand);
     int doIdle(uint32_t aClient, uint32_t aCommand, uint16_t aIdleFlags);
+    int doNext(uint32_t aClient, uint32_t aCommand);
     int doNoidle(uint32_t aClient, uint32_t aCommand);
     int doPause(uint32_t aClient, uint32_t aCommand, bool aPause);
     int doPing(uint32_t aClient, uint32_t aCommand);
     int doPlayid(uint32_t aClient, uint32_t aCommand, int aId);
     int doPlchanges(uint32_t aClient, uint32_t aCommand);
+    int doPrevious(uint32_t aClient, uint32_t aCommand);
     int doStatus(uint32_t aClient, uint32_t aCommand);
     int doVolume(uint32_t aClient, uint32_t aCommand, int aChange);
 

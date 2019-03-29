@@ -68,6 +68,8 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
                     }
                 ret = doIdle(aClient, aCommand, flags);
             }break;
+        case CommandID_next:
+            ret = doNext(aClient, aCommand); break;
         case CommandID_noidle:
             ret = doNoidle(aClient, aCommand); break;
         case CommandID_notcommands:
@@ -81,6 +83,8 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
             ret = doPlayid(aClient, aCommand, std::stoi(std::string(aArgs.front()))); break;
         case CommandID_plchanges:
             ret = doPlchanges(aClient, aCommand); break;
+        case CommandID_previous:
+            ret = doPrevious(aClient, aCommand); break;
         case CommandID_status:
             ret = doStatus(aClient, aCommand); break;
         case CommandID_volume:
@@ -167,6 +171,14 @@ int MPDProto::doIdle(uint32_t aClient, uint32_t aCommand, uint16_t aFlags)
     return ACK_OK_SILENT;
 }
 
+int MPDProto::doNext(uint32_t aClient, uint32_t aCommand)
+{
+    auto& queue = getServer().getQueue();
+    queue.next();
+
+    return ACK_OK;
+}
+
 int MPDProto::doNoidle(uint32_t aClient, uint32_t aCommand)
 {
     m_clientMap[aClient].IdleFlags = Idle_none;
@@ -234,6 +246,14 @@ int MPDProto::doPlchanges(uint32_t aClient, uint32_t aCommand)
 
         writeData(aClient, oss.str());
     }
+    return ACK_OK;
+}
+
+int MPDProto::doPrevious(uint32_t aClient, uint32_t aCommand)
+{
+    auto& queue = getServer().getQueue();
+    queue.previous();
+
     return ACK_OK;
 }
 

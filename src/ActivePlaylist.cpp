@@ -92,7 +92,13 @@ void ActivePlaylist::play()
         return;
     }
 
-    changeSong(&m_songs.front(), Gst::STATE_PLAYING);
+    if (m_songs.empty())
+        return;
+
+    resetQueue();
+    if (hasRandom())
+        shuffleQueue();
+    changeSong(m_playQueue.front(), Gst::STATE_PLAYING);
 }
 void ActivePlaylist::stop()
 {
@@ -319,16 +325,25 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
             if (m_playQueue.empty())
                 m_currentSong = nullptr;
         }
-        // Refresh stream URL if song is not local
+        // Refresh stream URL if song is not local?
+        /*
         else if (!m_currentSong->isLocal())
             m_currentSong->UpdateTime = std::chrono::system_clock::now();
+        */
     }
 
     m_currentSong = const_cast<Song*>(aSong);
 
     if (m_currentSong)
     {
+        // TODO: Proper insert song into queue method
+        if (std::find(m_playQueue.begin(), m_playQueue.end(), m_currentSong) == m_playQueue.end())
+            _addedSong(*m_currentSong);
+
         Util::Log(Util::Log_Debug) << "- setting up new song (" << m_currentSong->URL << ")";
+
+        // TODO: Join work queue if YDL job is running
+
         // if (m_currentSong->UpdateTime >= std::chrono::system_clock::now())
         //     return false; // Force retest?
 
@@ -352,6 +367,7 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
     if (ret == Gst::STATE_CHANGE_FAILURE)
     {
         Util::Log(Util::Log_Error) << "Failed to play song";
+        setError("Failed to play song");
         return false;
     }
 
@@ -360,8 +376,16 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
 
 const Playlist::Song* ActivePlaylist::nextSong(const Song* aCurSong)
 {
-    if (m_playQueue.empty())
+    if (m_songs.empty())
         return nullptr;
+    else if (m_playQueue.empty() && !hasRepeat())
+        return nullptr;
+    else if (hasRepeat())
+    {
+        resetQueue();
+        if (hasRandom())
+            shuffleQueue();
+    }
 
     auto curSongIt = std::find(m_playQueue.begin(), m_playQueue.end(), aCurSong);
     // Should hopefully never happen, but let's be on the safe side
@@ -381,8 +405,16 @@ const Playlist::Song* ActivePlaylist::nextSong(const Song* aCurSong)
 
 const Playlist::Song* ActivePlaylist::previousSong(const Song* aCurSong)
 {
-    if (m_playQueue.empty())
+    if (m_songs.empty())
         return nullptr;
+    else if (m_playQueue.empty() && !hasRepeat())
+        return nullptr;
+    else if (hasRepeat())
+    {
+        resetQueue();
+        if (hasRandom())
+            shuffleQueue();
+    }
 
     auto curSongIt = std::find(m_playQueue.begin(), m_playQueue.end(), aCurSong);
     // Should hopefully never happen, but let's be on the safe side
@@ -530,7 +562,7 @@ void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Element>& aSource)
 
 void ActivePlaylist::_addedSong(Song& aSong)
 {
-    Playlist::_addedSong(aSong);
+    // Playlist::_addedSong(aSong);
 
     if (hasRandom())
     {
