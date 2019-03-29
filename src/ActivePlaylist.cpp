@@ -135,7 +135,10 @@ void ActivePlaylist::next()
 }
 void ActivePlaylist::previous()
 {
-    // TODO
+    Gst::State state, pending;
+    m_playbin->get_state(state, pending, {});
+
+    changeSong(previousSong(m_currentSong), state);
 }
 
 const Playlist::Song& ActivePlaylist::addSong(const std::string& aUrl)
