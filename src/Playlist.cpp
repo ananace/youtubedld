@@ -102,7 +102,7 @@ size_t Playlist::indexOf(const Song& aSong) const
     });
     if (it == cend())
         return std::numeric_limits<size_t>::max();
-    return cend() - it;
+    return it - cbegin();
 }
 
 bool Playlist::hasSong(const std::string& aSearch) const

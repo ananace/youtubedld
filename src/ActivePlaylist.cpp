@@ -475,11 +475,17 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
 
     case Gst::MESSAGE_STATE_CHANGED:
         {
-            Gst::State oldState, newState, pendingState;
-            Glib::RefPtr<Gst::MessageStateChanged>::cast_static(aMessage)->parse(oldState, newState, pendingState);
+            auto msg = Glib::RefPtr<Gst::MessageStateChanged>::cast_static(aMessage);
+            if (msg->get_source() != m_playbin)
+                break;
 
-            m_server->pushEvent(Protocols::Event(Protocols::Event_StateChange));
-            // Util::Log(Util::Log_Debug) << "State change " << oldState << " -> " << newState << " (-> " << pendingState << ")";
+            Gst::State oldState, newState, pendingState;
+            msg->parse(oldState, newState, pendingState);
+
+            if ((newState == Gst::STATE_PLAYING && oldState <= Gst::STATE_PAUSED) ||
+                (newState == Gst::STATE_PAUSED && oldState >= Gst::STATE_PLAYING))
+                m_server->pushEvent(Protocols::Event(Protocols::Event_StateChange));
+            Util::Log(Util::Log_Debug) << "State change for " << std::string(msg->get_source()->get_name()) << "(" << (msg->get_source() == m_playbin) << "): " << oldState << " -> " << newState << " (-> " << pendingState << ")";
         }
         break;
 

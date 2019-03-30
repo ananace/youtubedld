@@ -9,6 +9,21 @@
 using Protocols::MPDProto;
 using namespace Protocols::MPD;
 
+std::string helperCursongToStr(ActivePlaylist& aQueue)
+{
+    auto* cursong = aQueue.getCurrentSong();
+    if (cursong == nullptr)
+        return "";
+
+    float seconds = std::chrono::duration<float>(aQueue.getElapsed()).count();
+    std::ostringstream oss;
+    oss << "song: " << aQueue.indexOf(*cursong) << "\n"
+        << "songid: " << cursong->ID << "\n"
+        << "time: " << int(seconds) << ":" << std::chrono::duration_cast<std::chrono::seconds>(cursong->Duration).count() << "\n"
+        << "elapsed: " << seconds << "\n";
+    return oss.str();
+}
+
 int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<std::string_view>& aArgs)
 {
     (void)aClient;
@@ -137,15 +152,7 @@ int MPDProto::doConsume(uint32_t aClient, uint32_t aCommand, bool aConsume)
 }
 int MPDProto::doCurrentsong(uint32_t aClient, uint32_t aCommand)
 {
-    auto& queue = getServer().getQueue();
-    auto& cursong = *queue.getCurrentSong();
-    float seconds = std::chrono::duration<float>(queue.getElapsed()).count();
-
-    std::ostringstream oss;
-    oss << "song: " << queue.indexOf(cursong) << "\n"
-        << "songid: " << cursong.ID << "\n"
-        << "time: " << int(seconds) << ":" << std::chrono::duration_cast<std::chrono::seconds>(cursong.Duration).count() << "\n"
-        << "elapsed: " << seconds << "\n";
+    writeData(aClient, helperCursongToStr(getServer().getQueue()));
 
     return ACK_OK;
 }
@@ -283,7 +290,7 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
         {
             std::string statestr = status == PS_Playing ? "play" : "pause";
             oss << "state: " << statestr << "\n";
-            doCurrentsong(aClient, aCommand);
+            oss << helperCursongToStr(queue);
         }
     }
 
