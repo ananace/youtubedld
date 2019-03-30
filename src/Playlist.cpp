@@ -29,6 +29,13 @@ Playlist::Song::Song()
     , Priority(0)
     , Direct(false)
 { }
+Playlist::Song::Song(const std::string& aUrl)
+    : URL(aUrl)
+    , ID(0)
+    , Priority(0)
+    , Direct(false)
+{ }
+/*
 Playlist::Song::Song(const Song& aSong)
     : URL(aSong.URL)
     , ID(aSong.ID)
@@ -41,6 +48,7 @@ Playlist::Song::Song(const Song& aSong)
     , Duration(aSong.Duration)
     , UpdateTime(aSong.UpdateTime)
     , NextUpdateTime(aSong.NextUpdateTime)
+    , UpdateTask(aSong.UpdateTask)
     , Direct(aSong.Direct)
 { }
 Playlist::Song::Song(Song&& aSong)
@@ -57,12 +65,6 @@ Playlist::Song::Song(Song&& aSong)
     , NextUpdateTime(std::move(aSong.NextUpdateTime))
     , UpdateTask(std::move(aSong.UpdateTask))
     , Direct(std::move(aSong.Direct))
-{ }
-Playlist::Song::Song(const std::string& aUrl)
-    : URL(aUrl)
-    , ID(0)
-    , Priority(0)
-    , Direct(false)
 { }
 
 Playlist::Song& Playlist::Song::operator=(const Song& aRhs)
@@ -81,6 +83,7 @@ Playlist::Song& Playlist::Song::operator=(const Song& aRhs)
     Duration = aRhs.Duration;
     UpdateTime = aRhs.UpdateTime;
     NextUpdateTime = aRhs.NextUpdateTime;
+    UpdateTask = aRhs.UpdateTask;
     Direct = aRhs.Direct;
 
     return *this;
@@ -106,6 +109,7 @@ Playlist::Song& Playlist::Song::operator=(Song&& aRhs)
 
     return *this;
 }
+*/
 bool Playlist::Song::isDirect() const
 {
     return isLocal() || Direct;
@@ -215,7 +219,7 @@ const Playlist::Song& Playlist::addSong(const std::string& aUrl)
 {
     auto& added = _addSong(aUrl);
     if (!added.isLocal())
-        s_songUpdateQueue.queueTask<void>([this,&added]() { _updateSong(added); });
+        _queueUpdateSong(added);
 
     return added;
 }
@@ -392,6 +396,8 @@ void Playlist::_updateSong(Song& aSong)
     aSong.DataURL = response.DownloadUrl;
     aSong.DataHeaders = response.DownloadHeaders;
     aSong.UpdateTime = std::chrono::system_clock::now();
+
+    aSong.UpdateTask = std::shared_future<bool>();
 
     _updatedSong(aSong);
 }

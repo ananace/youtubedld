@@ -28,7 +28,7 @@ public:
         std::chrono::system_clock::time_point UpdateTime;
         std::chrono::system_clock::time_point NextUpdateTime;
 
-        std::future<bool> UpdateTask;
+        std::shared_future<bool> UpdateTask;
 
         bool Direct;
 
@@ -41,12 +41,7 @@ public:
         const std::string& getAlbum() const;
 
         Song();
-        Song(const Song& aSong);
-        Song(Song&& aSong);
         Song(const std::string& aUrl);
-
-        Song& operator=(const Song& aRhs);
-        Song& operator=(Song&& aRhs);
     };
 
     using SongArray = std::vector<Song>;

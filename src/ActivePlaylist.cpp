@@ -342,15 +342,16 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
 
         Util::Log(Util::Log_Debug) << "- setting up new song (" << m_currentSong->URL << ")";
 
-        if (m_currentSong->NextUpdateTime >= std::chrono::system_clock::now())
+        if (!m_currentSong->UpdateTask.valid() && m_currentSong->NextUpdateTime >= std::chrono::system_clock::now())
             _queueUpdateSong(*m_currentSong);
 
         // Wait for the current song update to finish before playing it
         // TODO: timeout and handle that correctly
         if (m_currentSong->UpdateTask.valid())
         {
+            auto task = m_currentSong->UpdateTask;
             Util::Log(Util::Log_Debug) << "- Task is available, waiting for it";
-            m_currentSong->UpdateTask.wait();
+            task.wait();
             Util::Log(Util::Log_Debug) << "- Task finished";
         }
 
