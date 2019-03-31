@@ -20,6 +20,7 @@ std::string helperCursongToStr(ActivePlaylist& aQueue)
     oss << "song: " << aQueue.indexOf(*cursong) << "\n"
         << "songid: " << cursong->ID << "\n"
         << "time: " << int(seconds) << ":" << std::chrono::duration_cast<std::chrono::seconds>(cursong->Duration).count() << "\n"
+        << "duration: " << std::chrono::duration_cast<std::chrono::seconds>(cursong->Duration).count() << "\n"
         << "elapsed: " << seconds << "\n";
     return oss.str();
 }
@@ -292,6 +293,16 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
             oss << "state: " << statestr << "\n";
             oss << helperCursongToStr(queue);
         }
+    }
+
+    auto* cursong = queue.getCurrentSong();
+    if (cursong != nullptr)
+    {
+        auto* nextsong = queue.nextSong(cursong);
+
+        if (nextsong != nullptr)
+            oss << "nextsong: " << queue.indexOf(nextsong)
+                << "nextsongid: " << nextsong->ID;
     }
 
     if (queue.hasError())
