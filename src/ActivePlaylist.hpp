@@ -10,7 +10,7 @@ enum PlayFlags : uint8_t
     PF_Random   = 1u << 1u,
     PF_Repeat   = 1u << 2u,
     PF_Single   = 1u << 3u,
-    PF_SingleOS = 1u << 3u,
+    PF_SingleOS = 1u << 4u,
 
     PF_Live     = 1u << 5u,
 };
@@ -24,9 +24,9 @@ enum PlayStatus : uint8_t
 
 enum SingleStatus : int8_t
 {
-    Single_False   = false,
-    Single_True    = true,
-    Single_Oneshot = -1
+    Single_False   = 0,
+    Single_True    = 1,
+    Single_Oneshot = 2
 };
 
 class ActivePlaylist : public Playlist

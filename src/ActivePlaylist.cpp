@@ -276,6 +276,8 @@ void ActivePlaylist::setSingle(SingleStatus aSingle)
         m_playFlags |= uint8_t(PF_Single);
         if (aSingle == Single_Oneshot)
             m_playFlags |= uint8_t(PF_SingleOS);
+        else
+            m_playFlags &= uint8_t(~PF_SingleOS);
     }
     else
         m_playFlags &= uint8_t(~PF_Single) & uint8_t(~PF_SingleOS);

@@ -101,6 +101,22 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
             ret = doPlchanges(aClient, aCommand); break;
         case CommandID_previous:
             ret = doPrevious(aClient, aCommand); break;
+        case CommandID_single:
+            {
+                SingleStatus single = Single_False;
+                Util::Log(Util::Log_Debug) << "Single: " << std::string(aArgs.front());
+                if (aArgs.front() == "oneshot")
+                {
+                    single = Single_Oneshot;
+                    Util::Log(Util::Log_Debug) << "(Oneshot)";
+                }
+                else
+                {
+                    single = SingleStatus(std::stoi(std::string(aArgs.front())));
+                    Util::Log(Util::Log_Debug) << "(" << int8_t(single) << ")";
+                }
+                ret = doSingle(aClient, aCommand, int8_t(single));
+            } break;
         case CommandID_status:
             ret = doStatus(aClient, aCommand); break;
         case CommandID_volume:
@@ -261,6 +277,14 @@ int MPDProto::doPrevious(uint32_t aClient, uint32_t aCommand)
 {
     auto& queue = getServer().getQueue();
     queue.previous();
+
+    return ACK_OK;
+}
+
+int MPDProto::doSingle(uint32_t aClient, uint32_t aCommand, int8_t aSingle)
+{
+    auto& queue = getServer().getQueue();
+    queue.setSingle(SingleStatus(aSingle));
 
     return ACK_OK;
 }
