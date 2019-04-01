@@ -261,16 +261,24 @@ void ActivePlaylist::setRepeat(bool aRepeat)
         m_playFlags &= uint8_t(~PF_Repeat);
     m_server->pushEvent(Protocols::Event(Protocols::Event_OptionChange));
 }
-bool ActivePlaylist::hasSingle() const
+SingleStatus ActivePlaylist::hasSingle() const
 {
-    return (m_playFlags & PF_Single) != 0;
+    SingleStatus status = Single_False;
+    if ((m_playFlags & PF_Single) != 0)
+        status = (m_playFlags & PF_SingleOS) == 0 ? Single_True : Single_Oneshot;
+
+    return status;
 }
-void ActivePlaylist::setSingle(bool aSingle)
+void ActivePlaylist::setSingle(SingleStatus aSingle)
 {
-    if (aSingle)
+    if (aSingle > Single_False)
+    {
         m_playFlags |= uint8_t(PF_Single);
+        if (aSingle == Single_Oneshot)
+            m_playFlags |= uint8_t(PF_SingleOS);
+    }
     else
-        m_playFlags &= uint8_t(~PF_Single);
+        m_playFlags &= uint8_t(~PF_Single) & uint8_t(~PF_SingleOS);
     m_server->pushEvent(Protocols::Event(Protocols::Event_OptionChange));
 }
 
@@ -555,10 +563,16 @@ void ActivePlaylist::on_about_to_finish()
 {
     Util::Log(Util::Log_Debug) << "About to finish current stream, calling next.";
 
-    if (hasSingle() && !hasRepeat())
-        stop();
-    else if (hasSingle())
-        changeSong(m_currentSong, Gst::STATE_PLAYING);
+    if (hasSingle() > Single_False)
+    {
+        if (hasSingle() == Single_Oneshot)
+            setSingle(Single_False);
+
+        if (!hasRepeat())
+            stop();
+        else
+            changeSong(m_currentSong, Gst::STATE_PLAYING);
+    }
     else
         changeSong(nextSong(m_currentSong), Gst::STATE_PLAYING);
 }

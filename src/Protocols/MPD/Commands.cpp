@@ -272,10 +272,13 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
 
     auto status = queue.getStatus();
 
+    SingleStatus single = queue.hasSingle();
+    std::string singleStr = (single == Single_Oneshot) ? "oneshot" : std::to_string(int(single));
+
     oss << "volume: " << int(queue.getVolume() * 100) << "\n"
         << "repeat: " << int(queue.hasRepeat()) << "\n"
         << "random: " << int(queue.hasRandom()) << "\n"
-        << "single: " << int(queue.hasSingle()) << "\n"
+        << "single: " << singleStr << "\n"
         << "consume: " << int(queue.hasConsume()) << "\n"
         << "playlist: " << 0 << "\n"
         << "playlistlength: " << queue.size() << "\n"
@@ -301,7 +304,7 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
         auto* nextsong = queue.nextSong(cursong);
 
         if (nextsong != nullptr)
-            oss << "nextsong: " << queue.indexOf(nextsong)
+            oss << "nextsong: " << queue.indexOf(*nextsong)
                 << "nextsongid: " << nextsong->ID;
     }
 

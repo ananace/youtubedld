@@ -6,12 +6,13 @@
 
 enum PlayFlags : uint8_t
 {
-    PF_Consume = 1u << 0u,
-    PF_Random  = 1u << 1u,
-    PF_Repeat  = 1u << 2u,
-    PF_Single  = 1u << 3u,
+    PF_Consume  = 1u << 0u,
+    PF_Random   = 1u << 1u,
+    PF_Repeat   = 1u << 2u,
+    PF_Single   = 1u << 3u,
+    PF_SingleOS = 1u << 3u,
 
-    PF_Live    = 1u << 4u,
+    PF_Live     = 1u << 5u,
 };
 
 enum PlayStatus : uint8_t
@@ -19,6 +20,13 @@ enum PlayStatus : uint8_t
     PS_Stopped,
     PS_Paused,
     PS_Playing
+};
+
+enum SingleStatus : int8_t
+{
+    Single_False   = false,
+    Single_True    = true,
+    Single_Oneshot = -1
 };
 
 class ActivePlaylist : public Playlist
@@ -62,8 +70,8 @@ public:
     void setRandom(bool aRandom = true);
     bool hasRepeat() const;
     void setRepeat(bool aRepeat = true);
-    bool hasSingle() const;
-    void setSingle(bool aSingle = true);
+    SingleStatus hasSingle() const;
+    void setSingle(SingleStatus aSingle = Single_True);
 
     bool hasError() const;
     const std::string& getError() const;
