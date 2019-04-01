@@ -47,6 +47,10 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
         case CommandID_command_list_ok_begin:
         case CommandID_command_list_end:
             ret = doCommandList(aClient, aCommand); break;
+        case CommandID_consume:
+        case CommandID_random:
+        case CommandID_repeat:
+            ret = doOption(aClient, aCommand, std::stoi(std::string(aArgs.front())) == 1); break;
         case CommandID_decoders:
             ret = doDecoders(aClient, aCommand); break;
         case CommandID_idle:
@@ -104,17 +108,10 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
         case CommandID_single:
             {
                 SingleStatus single = Single_False;
-                Util::Log(Util::Log_Debug) << "Single: " << std::string(aArgs.front());
                 if (aArgs.front() == "oneshot")
-                {
                     single = Single_Oneshot;
-                    Util::Log(Util::Log_Debug) << "(Oneshot)";
-                }
                 else
-                {
                     single = SingleStatus(std::stoi(std::string(aArgs.front())));
-                    Util::Log(Util::Log_Debug) << "(" << int8_t(single) << ")";
-                }
                 ret = doSingle(aClient, aCommand, int8_t(single));
             } break;
         case CommandID_status:
@@ -206,6 +203,19 @@ int MPDProto::doNext(uint32_t aClient, uint32_t aCommand)
 int MPDProto::doNoidle(uint32_t aClient, uint32_t aCommand)
 {
     m_clientMap[aClient].IdleFlags = Idle_none;
+    return ACK_OK;
+}
+
+int MPDProto::doOption(uint32_t aClient, uint32_t aCommand, bool aOption)
+{
+    auto& queue = getServer().getQueue();
+    if (aCommand == CommandID_consume)
+        queue.setConsume(aOption);
+    else if (aCommand == CommandID_random)
+        queue.setRandom(aOption);
+    else
+        queue.setRepeat(aOption);
+
     return ACK_OK;
 }
 
