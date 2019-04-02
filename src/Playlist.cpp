@@ -327,6 +327,10 @@ void Playlist::_updateSong(Song& aSong)
     aSong.ThumbnailURL = response.ThumbnailUrl;
     aSong.DataURL = response.DownloadUrl;
     aSong.DataHeaders = response.DownloadHeaders;
+
+    aSong.Tags["ARTIST"] = response.Artist;
+    aSong.Tags["ALBUM"] = response.Extractor;
+
     aSong.UpdateTime = std::chrono::system_clock::now();
 
     aSong.UpdateTask = std::shared_future<bool>();

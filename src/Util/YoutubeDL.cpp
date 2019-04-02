@@ -190,6 +190,17 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
     {
         auto data = nlohmann::json::parse(ret);
         auto response = YoutubeDLResponse{ true, data["duration"], data["title"], data["thumbnail"] };
+
+        if (data.count("artist") > 0 && !data["artist"].is_null())
+            response.Artist = data["artist"];
+        else if (data.count("creator") > 0 && !data["creator"].is_null())
+            response.Artist = data["creator"];
+        else if (data.count("uploader") > 0 && !data["uploader"].is_null())
+            response.Artist = data["uploader"];
+
+        if (data.count("extractor_key") > 0 && !data["extractor_key"].is_null())
+            response.Extractor = data["extractor_key"];
+
         nlohmann::json chosenFormat = { { "tbr", -1.0 } };
 
         // Direct format match

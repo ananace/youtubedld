@@ -22,6 +22,9 @@ struct YoutubeDLResponse
     std::string ThumbnailUrl;
     std::string DownloadUrl;
     std::unordered_map<std::string, std::string> DownloadHeaders;
+
+    std::string Extractor;
+    std::string Artist;
 };
 
 class YoutubeDL
