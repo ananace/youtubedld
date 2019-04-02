@@ -112,6 +112,7 @@ private:
     int doConsume(uint32_t aClient, uint32_t aCommand, bool aConsume);
     int doCurrentsong(uint32_t aClient, uint32_t aCommand);
     int doDecoders(uint32_t aClient, uint32_t aCommand);
+    int doDeleteid(uint32_t aClient, uint32_t aCommand, int aId);
     int doIdle(uint32_t aClient, uint32_t aCommand, uint16_t aIdleFlags);
     int doNext(uint32_t aClient, uint32_t aCommand);
     int doNoidle(uint32_t aClient, uint32_t aCommand);

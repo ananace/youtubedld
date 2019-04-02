@@ -53,6 +53,9 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
             ret = doOption(aClient, aCommand, std::stoi(std::string(aArgs.front())) == 1); break;
         case CommandID_decoders:
             ret = doDecoders(aClient, aCommand); break;
+        case CommandID_delete:
+        case CommandID_deleteid:
+            ret = doDeleteid(aClient, aCommand, std::stoi(std::string(aArgs.front()))); break;
         case CommandID_idle:
             {
                 uint16_t flags;
@@ -177,8 +180,27 @@ int MPDProto::doCurrentsong(uint32_t aClient, uint32_t aCommand)
 
     return ACK_OK;
 }
+
 int MPDProto::doDecoders(uint32_t aClient, uint32_t aCommand)
 {
+    return ACK_OK;
+}
+
+int MPDProto::doDeleteid(uint32_t aClient, uint32_t aCommand, int aId)
+{
+    auto& queue = getServer().getQueue();
+    if (aCommand == CommandID_delete)
+    {
+        if (aId >= queue.size())
+            throw MPDError(ACK_ERROR_ARG, AvailableCommands[aCommand].Name, "invalid song number");
+
+        aId = queue.getSong(aId)->ID;
+    }
+
+    if (!queue.hasSongID(aId))
+        throw MPDError(ACK_ERROR_NO_EXIST, AvailableCommands[aCommand].Name, "song does not exist");
+
+    queue.removeSongID(aId);
     return ACK_OK;
 }
 
@@ -249,7 +271,7 @@ int MPDProto::doPing(uint32_t aClient, uint32_t aCommand)
 int MPDProto::doPlayid(uint32_t aClient, uint32_t aCommand, int aId)
 {
     auto& queue = getServer().getQueue();
-    if (AvailableCommands[aCommand].Name == "play")
+    if (aCommand == CommandID_play)
     {
         if (aId >= queue.size())
             throw MPDError(ACK_ERROR_ARG, AvailableCommands[aCommand].Name, "invalid song number");
