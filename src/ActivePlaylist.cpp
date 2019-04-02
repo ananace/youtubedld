@@ -102,24 +102,10 @@ void ActivePlaylist::play()
 }
 void ActivePlaylist::stop()
 {
-    Util::Log(Util::Log_Debug) << "Stop()";
-
-    Gst::State state, pending;
-    m_playbin->get_state(state, pending, {});
-
-    if (state != Gst::STATE_NULL)
-        return;
-
     m_playbin->set_state(Gst::STATE_NULL);
 }
 void ActivePlaylist::pause()
 {
-    Gst::State state, pending;
-    m_playbin->get_state(state, pending, {});
-
-    if (state != Gst::STATE_PLAYING)
-        return;
-
     m_playbin->set_state(Gst::STATE_PAUSED);
 }
 void ActivePlaylist::resume()
