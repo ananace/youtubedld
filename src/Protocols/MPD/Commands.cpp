@@ -95,7 +95,14 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
         case CommandID_notcommands:
             ret = doCommands(aClient, aCommand); break;
         case CommandID_pause:
-            ret = doPause(aClient, aCommand, std::stoi(std::string(aArgs.front())) == 1); break;
+            {
+                bool pause = true;
+                if (aArgs.size() > 0)
+                    pause = std::stoi(std::string(aArgs.front())) == 1;
+                else
+                    pause = getServer().getQueue().getStatus() != PS_Paused;
+                ret = doPause(aClient, aCommand, pause);
+            } break;
         case CommandID_ping:
             ret = doPing(aClient, aCommand); break;
         case CommandID_play:
