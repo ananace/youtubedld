@@ -257,7 +257,13 @@ bool Playlist::saveToFile(const std::string& aPath) const
 
 Playlist::Song& Playlist::_addSong(const std::string& aUrl)
 {
-    m_songs.push_back({ aUrl });
+    std::string url = aUrl;
+    if (aUrl.substr(0,3) == "yt:")
+        url = aUrl.substr(3);
+    else if (aUrl.substr(0,8) == "youtube:")
+        url = aUrl.substr(8);
+
+    m_songs.push_back({ url });
     auto& added = m_songs.back();
 
     added.ID = m_songCounter++;
