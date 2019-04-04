@@ -141,9 +141,9 @@ const Playlist::Song* Playlist::getSongID(size_t aID) const
         return nullptr;
     return &(*it);
 }
-const Playlist::Song& Playlist::addSong(const std::string& aUrl)
+const Playlist::Song& Playlist::addSong(const std::string& aUrl, int aPosition)
 {
-    auto& added = _addSong(aUrl);
+    auto& added = _addSong(aUrl, aPosition);
     if (!added.isLocal())
         _queueUpdateSong(added);
 
@@ -255,7 +255,7 @@ bool Playlist::saveToFile(const std::string& aPath) const
     return true;
 }
 
-Playlist::Song& Playlist::_addSong(const std::string& aUrl)
+Playlist::Song& Playlist::_addSong(const std::string& aUrl, int aPosition)
 {
     std::string url = aUrl;
     if (aUrl.substr(0,3) == "yt:")
@@ -263,9 +263,22 @@ Playlist::Song& Playlist::_addSong(const std::string& aUrl)
     else if (aUrl.substr(0,8) == "youtube:")
         url = aUrl.substr(8);
 
-    m_songs.push_back({ url });
-    auto& added = m_songs.back();
+    Song* addPtr;
+    if (aPosition < 0)
+    {
+        m_songs.emplace_back(url);
+        addPtr = &m_songs.back();
+    }
+    else
+    {
+        auto it = m_songs.begin() + aPosition;
+        if (it == m_songs.end())
+            it = m_songs.end() - 1;
+        it = m_songs.emplace(it, url);
+        addPtr = &(*it);
+    }
 
+    auto& added = *addPtr;
     added.ID = m_songCounter++;
     if (added.isLocal())
     {
@@ -281,7 +294,7 @@ Playlist::Song& Playlist::_addSong(const std::string& aUrl)
     return added;
 }
 
-Playlist::Song& Playlist::_addSong(const Song& aSong)
+Playlist::Song& Playlist::_addSong(const Song& aSong, int aPosition)
 {
     m_songs.push_back(aSong);
     auto& added = m_songs.back();

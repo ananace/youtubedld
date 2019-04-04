@@ -133,9 +133,9 @@ void ActivePlaylist::previous()
     changeSong(previousSong(m_currentSong), state);
 }
 
-const Playlist::Song& ActivePlaylist::addSong(const std::string& aUrl)
+const Playlist::Song& ActivePlaylist::addSong(const std::string& aUrl, int aPosition)
 {
-    auto& ret = Playlist::addSong(aUrl);
+    auto& ret = Playlist::addSong(aUrl, aPosition);
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
     return ret;
 }

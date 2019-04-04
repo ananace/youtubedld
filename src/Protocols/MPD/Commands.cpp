@@ -37,8 +37,14 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
     switch (aCommand)
     {
         case CommandID_add:
-        case CommandID_addid:
             ret = doAdd(aClient, aCommand, std::string(aArgs.front())); break;
+        case CommandID_addid:
+            {
+                int pos = -1;
+                if (aArgs.size() > 1)
+                    pos = std::stoi(std::string(aArgs[1]));
+                ret = doAddid(aClient, aCommand, std::string(aArgs.front()), pos);
+            } break;
         case CommandID_clearerror:
             ret = doClearerror(aClient, aCommand); break;
         case CommandID_commands:
@@ -142,8 +148,12 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
 int MPDProto::doAdd(uint32_t aClient, uint32_t aCommand, const std::string& aUrl)
 {
     auto ret = getServer().getQueue().addSong(aUrl);
-    if (AvailableCommands[aCommand].Name == "addid")
-        writeData(aClient, "Id: " + std::to_string(ret.ID) + "\n");
+    return ACK_OK;
+}
+int MPDProto::doAddid(uint32_t aClient, uint32_t aCommand, const std::string& aUrl, int aPosition)
+{
+    auto ret = getServer().getQueue().addSong(aUrl, aPosition);
+    writeData(aClient, "Id: " + std::to_string(ret.ID) + "\n");
     return ACK_OK;
 }
 int MPDProto::doClearerror(uint32_t aClient, uint32_t aCommand)

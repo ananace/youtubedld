@@ -105,6 +105,7 @@ private:
     int runCommand(uint32_t aClient, const Protocols::MPD::CommandDefinition* aCommand, const std::vector<std::string>& aArgs);
 
     int doAdd(uint32_t aClient, uint32_t aCommand, const std::string& aUrl);
+    int doAddid(uint32_t aClient, uint32_t aCommand, const std::string& aUrl, int aPosition);
     int doClearerror(uint32_t aClient, uint32_t aCommand);
     int doClose(uint32_t aClient, uint32_t aCommand);
     int doCommands(uint32_t aClient, uint32_t aCommand);

@@ -52,7 +52,7 @@ public:
     const Song* nextSong(const Song* aCurSong);
     const Song* previousSong(const Song* aCurSong);
 
-    const Song& addSong(const std::string& aUrl);
+    const Song& addSong(const std::string& aUrl, int aPosition = -1);
     void removeSong(const std::string& aSearch);
     void removeSong(size_t aSong);
     void removeSongID(int aID);

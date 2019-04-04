@@ -1,10 +1,10 @@
 #pragma once
 
 #include <chrono>
+#include <deque>
 #include <future>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 class Server;
 
@@ -44,7 +44,7 @@ public:
         Song(const std::string& aUrl);
     };
 
-    using SongArray = std::vector<Song>;
+    using SongArray = std::deque<Song>;
 
     Playlist();
     Playlist(const Playlist& copy) = default;
@@ -66,7 +66,7 @@ public:
     const Song* getSong(const std::string& aSearch) const;
     const Song* getSong(size_t aSong) const;
     const Song* getSongID(size_t aID) const;
-    virtual const Song& addSong(const std::string& aUrl);
+    virtual const Song& addSong(const std::string& aUrl, int aPosition = -1);
     virtual void removeSong(const std::string& aSearch);
     virtual void removeSong(size_t aSong);
     virtual void removeSongID(size_t aID);
@@ -82,8 +82,8 @@ public:
 protected:
     virtual void _addedSong(Song& aSong);
     virtual void _updatedSong(Song& aSong);
-    Song& _addSong(const Song& aSong);
-    Song& _addSong(const std::string& aUrl);
+    Song& _addSong(const Song& aSong, int aPosition = -1);
+    Song& _addSong(const std::string& aUrl, int aPosition = -1);
     void _queueUpdateSong(Song& aSong);
     void _updateSong(Song& aSong);
 
