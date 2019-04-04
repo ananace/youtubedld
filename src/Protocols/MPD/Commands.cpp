@@ -115,6 +115,8 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
             ret = doPlchanges(aClient, aCommand); break;
         case CommandID_previous:
             ret = doPrevious(aClient, aCommand); break;
+        case CommandID_setvol:
+            ret = doSetvol(aClient, aCommand, std::stoi(std::string(aArgs.front()))); break;
         case CommandID_single:
             {
                 SingleStatus single = Single_False;
@@ -316,6 +318,14 @@ int MPDProto::doPrevious(uint32_t aClient, uint32_t aCommand)
 {
     auto& queue = getServer().getQueue();
     queue.previous();
+
+    return ACK_OK;
+}
+
+int MPDProto::doSetvol(uint32_t aClient, uint32_t aCommand, int aVolume)
+{
+    auto& queue = getServer().getQueue();
+    queue.setVolume(aVolume / 100.f);
 
     return ACK_OK;
 }

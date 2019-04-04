@@ -122,6 +122,7 @@ private:
     int doPlchanges(uint32_t aClient, uint32_t aCommand);
     int doPrevious(uint32_t aClient, uint32_t aCommand);
     int doOption(uint32_t aClient, uint32_t aCommand, bool aOption);
+    int doSetvol(uint32_t aClient, uint32_t aCommand, int aVolume);
     int doSingle(uint32_t aClient, uint32_t aCommand, int8_t aSingle);
     int doStatus(uint32_t aClient, uint32_t aCommand);
     int doVolume(uint32_t aClient, uint32_t aCommand, int aChange);
