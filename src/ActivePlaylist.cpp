@@ -136,27 +136,49 @@ void ActivePlaylist::previous()
 const Playlist::Song& ActivePlaylist::addSong(const std::string& aUrl, int aPosition)
 {
     auto& ret = Playlist::addSong(aUrl, aPosition);
+    m_playQueue.push_back(const_cast<Song*>(&ret));
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
     return ret;
 }
 void ActivePlaylist::removeSong(const std::string& aSearch)
 {
     Playlist::removeSong(aSearch);
+    auto it = std::find_if(m_playQueue.begin(), m_playQueue.end(), [aSearch](auto* aSong) { return aSong->URL == aSearch || aSong->Title == aSearch; });
+    if (it != m_playQueue.end())
+        m_playQueue.erase(it);
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }
 void ActivePlaylist::removeSong(size_t aSong)
 {
+    auto id = getSong(aSong)->ID;
     Playlist::removeSong(aSong);
+    auto it = std::find_if(m_playQueue.begin(), m_playQueue.end(), [id](auto* aSong) { return aSong->ID == id; });
+    if (it != m_playQueue.end())
+        m_playQueue.erase(it);
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }
-void ActivePlaylist::removeSongID(int aID)
+void ActivePlaylist::removeSongID(size_t aID)
 {
     Playlist::removeSongID(aID);
+    auto it = std::find_if(m_playQueue.begin(), m_playQueue.end(), [aID](auto* aSong) { return aSong->ID == aID; });
+    if (it != m_playQueue.end())
+        m_playQueue.erase(it);
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }
 void ActivePlaylist::removeAllSongs()
 {
     Playlist::removeAllSongs();
+    resetQueue();
+
+    m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
+}
+void ActivePlaylist::shuffle()
+{
+    Playlist::shuffle();
+    resetQueue();
+    if (hasRandom())
+        shuffleQueue();
+
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }
 

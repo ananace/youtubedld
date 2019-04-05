@@ -52,11 +52,12 @@ public:
     const Song* nextSong(const Song* aCurSong);
     const Song* previousSong(const Song* aCurSong);
 
-    const Song& addSong(const std::string& aUrl, int aPosition = -1);
-    void removeSong(const std::string& aSearch);
-    void removeSong(size_t aSong);
-    void removeSongID(int aID);
-    void removeAllSongs();
+    const Song& addSong(const std::string& aUrl, int aPosition = -1) override;
+    void removeSong(const std::string& aSearch) override;
+    void removeSong(size_t aSong) override;
+    void removeSongID(size_t aID) override;
+    void removeAllSongs() override;
+    void shuffle() override;
 
     PlayStatus getStatus() const;
     const Song* getCurrentSong() const;

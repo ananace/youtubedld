@@ -18,6 +18,7 @@ namespace std
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <random>
 
 using namespace std::chrono_literals;
 
@@ -175,6 +176,11 @@ void Playlist::removeSongID(size_t aID)
 void Playlist::removeAllSongs()
 {
     m_songs.clear();
+}
+void Playlist::shuffle()
+{
+    std::random_device dev;
+    std::shuffle(m_songs.begin(), m_songs.end(), dev);
 }
 
 void Playlist::update()

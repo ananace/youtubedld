@@ -71,6 +71,7 @@ public:
     virtual void removeSong(size_t aSong);
     virtual void removeSongID(size_t aID);
     virtual void removeAllSongs();
+    virtual void shuffle();
 
     virtual void update();
 

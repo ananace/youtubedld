@@ -340,6 +340,14 @@ int MPDProto::doSetvol(uint32_t aClient, uint32_t aCommand, int aVolume)
     return ACK_OK;
 }
 
+int MPDProto::doShuffle(uint32_t aClient, uint32_t aCommand)
+{
+    auto& queue = getServer().getQueue();
+    queue.shuffle();
+
+    return ACK_OK;
+}
+
 int MPDProto::doSingle(uint32_t aClient, uint32_t aCommand, int8_t aSingle)
 {
     auto& queue = getServer().getQueue();
