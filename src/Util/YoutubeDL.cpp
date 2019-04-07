@@ -259,25 +259,32 @@ int YoutubeDL::execute(const std::string& args, std::string& out)
 
     Util::Log(Util::Log_Debug) << "[YDL] < " << oss.str();
 
-    std::string scommand = oss.str();
-    std::string cmd = scommand + " 1> " + outname.string() + " 2> " + errname.string();
-    int ret = std::system(cmd.c_str());
-
-    std::string filename;
-    if (ret == 0)
-        filename = outname;
-    else
-        filename = errname;
-
-    std::ifstream file(filename, std::ios::in | std::ios::binary);
-    std::string line;
-    while (file)
+    int ret = 255;
+    try
     {
-        std::getline(file, line);
-        out.append(line);
+        std::string scommand = oss.str();
+        std::string cmd = scommand + " 1> " + outname.string() + " 2> " + errname.string();
+        ret = std::system(cmd.c_str());
+
+        std::string filename;
+        if (ret == 0)
+            filename = outname;
+        else
+            filename = errname;
+
+        std::ifstream file(filename, std::ios::in | std::ios::binary);
+        std::string line;
+        while (file)
+        {
+            std::getline(file, line);
+            out.append(line);
+        }
+        file.close();
     }
-    file.close();
+    catch(...) { }
+
     fs::remove(errname);
     fs::remove(outname);
+
     return ret;
 }
