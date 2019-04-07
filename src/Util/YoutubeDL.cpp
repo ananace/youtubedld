@@ -182,7 +182,7 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
 
     int result = execute(cmd, ret);
     if (result != 0)
-        return { false };
+        throw std::runtime_error(ret);
 
     Util::Log(Util::Log_Debug) << "[YDL] > \"" << cmd << "\" returned (" << result << "|" << ret.size() << "B)";
 
@@ -254,14 +254,22 @@ int YoutubeDL::execute(const std::string& args, std::string& out)
     int val = dist(dev);
 
     auto tmpdir = fs::temp_directory_path();
-    auto tmpname = tmpdir / ("ydl_out" + std::to_string(val));
+    auto outname = tmpdir / ("ydl_out" + std::to_string(val));
+    auto errname = tmpdir / ("ydl_err" + std::to_string(val));
 
     Util::Log(Util::Log_Debug) << "[YDL] < " << oss.str();
 
     std::string scommand = oss.str();
-    std::string cmd = scommand + " 1> " + tmpname.string();
+    std::string cmd = scommand + " 1> " + outname.string() + " 2> " + errname.string();
     int ret = std::system(cmd.c_str());
-    std::ifstream file(tmpname, std::ios::in | std::ios::binary);
+
+    std::string filename;
+    if (ret == 0)
+        filename = outname;
+    else
+        filename = errname;
+
+    std::ifstream file(filename, std::ios::in | std::ios::binary);
     std::string line;
     while (file)
     {
@@ -269,6 +277,7 @@ int YoutubeDL::execute(const std::string& args, std::string& out)
         out.append(line);
     }
     file.close();
-    fs::remove(tmpname);
+    fs::remove(errname);
+    fs::remove(outname);
     return ret;
 }

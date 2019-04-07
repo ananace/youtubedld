@@ -360,7 +360,11 @@ void Playlist::_updateSong(Song& aSong)
     }
     catch(const std::exception& ex)
     {
-        setError(ex.what());
+        std::string err = ex.what();
+        // TODO: Replace newlines
+
+        Util::Log(Util::Log_Debug) << "[Song] Exception occured in YDL: " << err;
+        setError(err);
     }
 }
 
