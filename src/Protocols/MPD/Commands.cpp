@@ -395,8 +395,8 @@ int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
         auto* nextsong = queue.nextSong(cursong);
 
         if (nextsong != nullptr)
-            oss << "nextsong: " << queue.indexOf(*nextsong)
-                << "nextsongid: " << nextsong->ID;
+            oss << "nextsong: " << queue.indexOf(*nextsong) << "\n"
+                << "nextsongid: " << nextsong->ID << "\n";
     }
 
     if (queue.hasError())
