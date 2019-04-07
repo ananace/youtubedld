@@ -339,22 +339,29 @@ void Playlist::_updateSong(Song& aSong)
     if (!ydl.isAvailable())
         return;
 
-    auto response = ydl.request({ aSong.URL });
+    try
+    {
+        auto response = ydl.request({ aSong.URL });
 
-    aSong.Duration = std::chrono::seconds(response.Duration);
-    aSong.Title = response.Title;
-    aSong.ThumbnailURL = response.ThumbnailUrl;
-    aSong.DataURL = response.DownloadUrl;
-    aSong.DataHeaders = response.DownloadHeaders;
+        aSong.Duration = std::chrono::seconds(response.Duration);
+        aSong.Title = response.Title;
+        aSong.ThumbnailURL = response.ThumbnailUrl;
+        aSong.DataURL = response.DownloadUrl;
+        aSong.DataHeaders = response.DownloadHeaders;
 
-    aSong.Tags["ARTIST"] = response.Artist;
-    aSong.Tags["ALBUM"] = response.Extractor;
+        aSong.Tags["ARTIST"] = response.Artist;
+        aSong.Tags["ALBUM"] = response.Extractor;
 
-    aSong.UpdateTime = std::chrono::system_clock::now();
+        aSong.UpdateTime = std::chrono::system_clock::now();
 
-    aSong.UpdateTask = std::shared_future<bool>();
+        aSong.UpdateTask = std::shared_future<bool>();
 
-    _updatedSong(aSong);
+        _updatedSong(aSong);
+    }
+    catch(const std::exception& ex)
+    {
+        setError(ex.what());
+    }
 }
 
 void Playlist::_updatedSong(Song& aSong)

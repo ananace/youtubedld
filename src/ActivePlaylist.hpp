@@ -76,7 +76,7 @@ public:
 
     bool hasError() const;
     const std::string& getError() const;
-    void setError(const std::string& aError);
+    void setError(const std::string& aError) override;
     void clearError();
 
     float getVolume() const;

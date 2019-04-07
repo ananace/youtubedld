@@ -74,6 +74,7 @@ public:
     virtual void shuffle();
 
     virtual void update();
+    virtual void setError(const std::string& aWhat) {}
 
     void addFromPlaylist(const Playlist& aPlaylist);
     bool addFromFile(const std::string& aPath);
