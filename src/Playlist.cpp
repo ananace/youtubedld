@@ -349,8 +349,10 @@ void Playlist::_updateSong(Song& aSong)
         aSong.DataURL = response.DownloadUrl;
         aSong.DataHeaders = response.DownloadHeaders;
 
-        aSong.Tags["ARTIST"] = response.Artist;
-        aSong.Tags["ALBUM"] = response.Extractor;
+        if (aSong.Tags.count("ARTIST") == 0)
+            aSong.Tags["ARTIST"] = response.Artist;
+        if (aSong.Tags.count("ALBUM") == 0)
+            aSong.Tags["ALBUM"] = response.Extractor;
 
         aSong.UpdateTime = std::chrono::system_clock::now();
 
