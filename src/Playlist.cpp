@@ -365,6 +365,9 @@ void Playlist::_updateSong(Song& aSong)
         std::string err = ex.what();
         // TODO: Replace newlines
 
+        // TODO: Disable updates? Depending on exception type?
+        aSong.UpdateTime = std::chrono::system_clock::now();
+
         Util::Log(Util::Log_Debug) << "[Song] Exception occured in YDL: " << err;
         setError(err);
     }
