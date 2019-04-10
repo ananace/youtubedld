@@ -200,6 +200,8 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
 
         if (data.count("extractor_key") > 0 && !data["extractor_key"].is_null())
             response.Extractor = data["extractor_key"];
+        else if (data.count("extractor") > 0 && !data["extractor"].is_null())
+            response.Extractor = data["extractor"];
 
         nlohmann::json chosenFormat = { { "tbr", -1.0 } };
 
