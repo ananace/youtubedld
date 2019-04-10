@@ -355,7 +355,6 @@ void Playlist::_updateSong(Song& aSong)
             aSong.Tags["ALBUM"] = response.Extractor;
 
         aSong.UpdateTime = std::chrono::system_clock::now();
-
         aSong.UpdateTask = std::shared_future<bool>();
 
         _updatedSong(aSong);
@@ -364,9 +363,9 @@ void Playlist::_updateSong(Song& aSong)
     {
         std::string err = ex.what();
         // TODO: Replace newlines
-
         // TODO: Disable updates? Depending on exception type?
         aSong.UpdateTime = std::chrono::system_clock::now();
+        aSong.UpdateTask = std::shared_future<bool>();
 
         Util::Log(Util::Log_Debug) << "[Song] Exception occured in YDL: " << err;
         setError(err);
