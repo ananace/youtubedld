@@ -213,7 +213,7 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
         else
         {
             nlohmann::json formats;
-            // Multiple format match
+            // Multiple format matches
             if (data.count("requested_formats") > 0)
             {
                 formats = data["requested_formats"];
@@ -231,6 +231,12 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
 
                 if (format["tbr"].get<double>() > chosenFormat["tbr"].get<double>())
                     chosenFormat = format;
+            }
+
+            // Unable to find a suitable format without a vcodec, fall back to first one
+            if (chosenFormat.count("url") > 0 && !chosenFormat["url"].is_null())
+            {
+                chosenFormat = formats.front();
             }
         }
 
