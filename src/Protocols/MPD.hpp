@@ -104,7 +104,18 @@ private:
     int runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<std::string>& aArgs);
     int runCommand(uint32_t aClient, const Protocols::MPD::CommandDefinition* aCommand, const std::vector<std::string>& aArgs);
 
-    int doAdd(uint32_t aClient, uint32_t aCommand, const std::string& aUrl);
+    struct CommandParams
+    {
+        uint32_t Client, Command;
+        std::vector<std::string_view> Arguments;
+
+        const MPD::CommandDefinition& getDefinition() const;
+
+        template<typename T>
+        T getArg(size_t aIndex) const;
+    };
+
+    int doAdd(const CommandParams& aParams);
     int doAddid(uint32_t aClient, uint32_t aCommand, const std::string& aUrl, int aPosition);
     int doClearerror(uint32_t aClient, uint32_t aCommand);
     int doClose(uint32_t aClient, uint32_t aCommand);

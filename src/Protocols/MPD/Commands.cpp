@@ -25,19 +25,40 @@ std::string helperCursongToStr(ActivePlaylist& aQueue)
     return oss.str();
 }
 
+const Protocols::MPD::CommandDefinition& MPDProto::CommandParams::getDefinition() const
+{
+    return AvailableCommands[Command];
+}
+
+template<>
+std::string MPDProto::CommandParams::getArg(size_t aIndex) const
+{
+    return std::string(Arguments.at(aIndex));
+}
+
+template<>
+int MPDProto::CommandParams::getArg(size_t aIndex) const
+{
+    return std::stoi(std::string(Arguments.at(aIndex)));
+}
+
 int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<std::string_view>& aArgs)
 {
-    (void)aClient;
-    (void) aCommand;
+    CommandParams params { aClient, aCommand, aArgs };
 
-    auto& command = AvailableCommands[aCommand];
+    auto& command = params.getDefinition();
     Util::Log(Util::Log_Debug) << "[MPD] Running command " << aCommand << "|" << command.Name << " for " << aClient;
+
+    static std::unordered_map<std::string, int(MPDProto::*)(const CommandParams&)> cmdMap = {
+        { "add", &MPDProto::doAdd }
+    };
+
+    if (cmdMap.count(command.Name) > 0)
+        return (this->*cmdMap.at(command.Name))(params);
 
     int ret = 0;
     switch (aCommand)
     {
-        case CommandID_add:
-            ret = doAdd(aClient, aCommand, std::string(aArgs.front())); break;
         case CommandID_addid:
             {
                 int pos = -1;
@@ -145,9 +166,10 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
     return ret;
 }
 
-int MPDProto::doAdd(uint32_t aClient, uint32_t aCommand, const std::string& aUrl)
+int MPDProto::doAdd(const CommandParams& aParams)
 {
-    auto ret = getServer().getQueue().addSong(aUrl);
+    auto url = aParams.getArg<std::string>(0);
+    auto ret = getServer().getQueue().addSong(url);
     return ACK_OK;
 }
 int MPDProto::doAddid(uint32_t aClient, uint32_t aCommand, const std::string& aUrl, int aPosition)

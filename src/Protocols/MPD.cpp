@@ -26,6 +26,7 @@ struct MPDMessage
     std::vector<std::string_view> Arguments;
 };
 
+
 MPDProto::MPDProto(uint16_t port)
     : m_server(port)
     , m_clientCounter(Client_None)
