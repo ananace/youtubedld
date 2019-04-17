@@ -87,6 +87,8 @@ void Server::init(int aArgc, const char** aArgv)
 
     if (removed != m_activeProtocols.end())
         m_activeProtocols.erase(removed, m_activeProtocols.end());
+
+    m_startTime = std::chrono::system_clock::now();
 }
 
 void Server::run()
@@ -105,6 +107,11 @@ void Server::run()
 
     m_mainLoop->run();
     m_activePlaylist.getPipeline()->set_state(Gst::STATE_NULL);
+}
+
+std::chrono::milliseconds Server::getUptime() const
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_startTime);
 }
 
 void Server::pushEvent(const Protocols::Event& aEvent)

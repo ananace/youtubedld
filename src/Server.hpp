@@ -4,6 +4,7 @@
 #include "ActivePlaylist.hpp"
 #include "Protocols/Base.hpp"
 
+#include <chrono>
 #include <deque>
 #include <memory>
 #include <vector>
@@ -26,6 +27,8 @@ public:
 
     ActivePlaylist& getQueue() { return m_activePlaylist; }
 
+    std::chrono::milliseconds getUptime() const;
+
     void pushEvent(const Protocols::Event& aEvent);
 
 private:
@@ -37,6 +40,7 @@ private:
     std::vector<std::unique_ptr<Protocols::Base>> m_activeProtocols;
     ActivePlaylist m_activePlaylist;
     std::deque<Protocols::Event> m_eventQueue;
+    std::chrono::system_clock::time_point m_startTime;
 
     sigc::connection m_ticker;
 

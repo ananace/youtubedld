@@ -126,6 +126,7 @@ private:
     int doSetvol(uint32_t aClient, uint32_t aCommand, int aVolume);
     int doShuffle(uint32_t aClient, uint32_t aCommand);
     int doSingle(uint32_t aClient, uint32_t aCommand, int8_t aSingle);
+    int doStats(uint32_t aClient, uint32_t aCommand);
     int doStatus(uint32_t aClient, uint32_t aCommand);
     int doVolume(uint32_t aClient, uint32_t aCommand, int aChange);
 

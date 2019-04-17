@@ -356,6 +356,25 @@ int MPDProto::doSingle(uint32_t aClient, uint32_t aCommand, int8_t aSingle)
     return ACK_OK;
 }
 
+int MPDProto::doStats(uint32_t aClient, uint32_t aCommand)
+{
+    auto uptime = getServer().getUptime();
+
+    std::ostringstream oss;
+
+    oss << "artists: 0\n"
+        << "albums: 0\n"
+        << "songs: 0\n"
+        << "uptime: " << std::chrono::duration_cast<std::chrono::seconds>(uptime).count() << "\n"
+        << "db_playtime: 0\n"
+        << "db_update: 0\n"
+        << "playtime: 0\n";
+
+    writeData(aClient, oss.str());
+
+    return ACK_OK;
+}
+
 int MPDProto::doStatus(uint32_t aClient, uint32_t aCommand)
 {
     auto& queue = getServer().getQueue();
