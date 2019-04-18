@@ -9,6 +9,8 @@
 using Protocols::MPDProto;
 using namespace Protocols::MPD;
 
+typedef std::pair<int,int> MPDRange;
+
 std::string helperCursongToStr(ActivePlaylist& aQueue)
 {
     auto* cursong = aQueue.getCurrentSong();
@@ -30,12 +32,48 @@ const Protocols::MPD::CommandDefinition& MPDProto::CommandParams::getDefinition(
     return AvailableCommands[Command];
 }
 
+bool MPDProto::CommandParams::hasArg(size_t aIndex) const
+{
+    return Arguments.size() > aIndex;
+}
+
+template<>
+bool MPDProto::CommandParams::isArg<std::string>(size_t aIndex) const
+{
+    return hasArg(aIndex) && true;
+}
 template<>
 std::string MPDProto::CommandParams::getArg(size_t aIndex) const
 {
     return std::string(Arguments.at(aIndex));
 }
 
+template<>
+bool MPDProto::CommandParams::isArg<MPDRange>(size_t aIndex) const
+{
+    if (!hasArg(aIndex))
+        return false;
+    auto& arg = Arguments.at(aIndex);
+    return std::find_if(arg.cbegin(), arg.cend(), [](char c) { return !std::isdigit(c) && c != ':'; }) == arg.cend();
+}
+template<>
+MPDRange MPDProto::CommandParams::getArg(size_t aIndex) const
+{
+    auto str = getArg<std::string>(aIndex);
+    int start = std::stoi(str.substr(0, str.find_first_of(':'))),
+        end = std::stoi(str.substr(str.find_first_of(':') + 1));
+
+    return MPDRange(start, end);
+}
+
+template<>
+bool MPDProto::CommandParams::isArg<int>(size_t aIndex) const
+{
+    if (!hasArg(aIndex))
+        return false;
+    auto& arg = Arguments.at(aIndex);
+    return std::find_if(arg.cbegin(), arg.cend(), [](char c) { return !std::isdigit(c); }) == arg.cend();
+}
 template<>
 int MPDProto::CommandParams::getArg(size_t aIndex) const
 {
@@ -50,7 +88,11 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
     Util::Log(Util::Log_Debug) << "[MPD] Running command " << aCommand << "|" << command.Name << " for " << aClient;
 
     static std::unordered_map<std::string, int(MPDProto::*)(const CommandParams&)> cmdMap = {
-        { "add", &MPDProto::doAdd }
+        { "add", &MPDProto::doAdd },
+        { "addid", &MPDProto::doAddid },
+        { "clearerror", &MPDProto::doClearerror },
+        { "commands", &MPDProto::doCommands },
+        { "notcommands", &MPDProto::doCommands }
     };
 
     if (cmdMap.count(command.Name) > 0)
@@ -59,17 +101,6 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
     int ret = 0;
     switch (aCommand)
     {
-        case CommandID_addid:
-            {
-                int pos = -1;
-                if (aArgs.size() > 1)
-                    pos = std::stoi(std::string(aArgs[1]));
-                ret = doAddid(aClient, aCommand, std::string(aArgs.front()), pos);
-            } break;
-        case CommandID_clearerror:
-            ret = doClearerror(aClient, aCommand); break;
-        case CommandID_commands:
-            ret = doCommands(aClient, aCommand); break;
         case CommandID_command_list_begin:
         case CommandID_command_list_ok_begin:
         case CommandID_command_list_end:
@@ -122,8 +153,6 @@ int MPDProto::runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<
             ret = doNext(aClient, aCommand); break;
         case CommandID_noidle:
             ret = doNoidle(aClient, aCommand); break;
-        case CommandID_notcommands:
-            ret = doCommands(aClient, aCommand); break;
         case CommandID_pause:
             {
                 bool pause = true;
@@ -172,33 +201,38 @@ int MPDProto::doAdd(const CommandParams& aParams)
     auto ret = getServer().getQueue().addSong(url);
     return ACK_OK;
 }
-int MPDProto::doAddid(uint32_t aClient, uint32_t aCommand, const std::string& aUrl, int aPosition)
+int MPDProto::doAddid(const CommandParams& aParams)
 {
-    auto ret = getServer().getQueue().addSong(aUrl, aPosition);
-    writeData(aClient, "Id: " + std::to_string(ret.ID) + "\n");
+    std::string url = aParams.getArg<std::string>(0);
+    int pos = -1;
+    if (aParams.hasArg(1))
+        pos = aParams.getArg<int>(1);
+
+    auto ret = getServer().getQueue().addSong(url, pos);
+    writeData(aParams.Client, "Id: " + std::to_string(ret.ID) + "\n");
     return ACK_OK;
 }
-int MPDProto::doClearerror(uint32_t aClient, uint32_t aCommand)
+int MPDProto::doClearerror(const CommandParams&)
 {
     getServer().getQueue().clearError();
     return ACK_OK;
 }
-int MPDProto::doClose(uint32_t aClient, uint32_t aCommand)
+int MPDProto::doClose(const CommandParams&)
 {
     // TODO
     return ACK_OK_SILENT;
 }
-int MPDProto::doCommands(uint32_t aClient, uint32_t aCommand)
+int MPDProto::doCommands(const CommandParams& aParams)
 {
-    auto& cl = m_clientMap[aClient];
+    auto& cl = m_clientMap[aParams.Client];
     Permissions userPerm = Permissions(cl.UserFlags & 0x07);
-    bool invert = aCommand == CommandID_notcommands;
+    bool invert = aParams.Command == CommandID_notcommands;
     for (auto& cmd : AvailableCommands)
     {
         if (!invert ? (cmd.Permission > userPerm) : (cmd.Permission <= userPerm))
             continue;
 
-        writeData(aClient, std::string(cmd.Name) + "\n");
+        writeData(aParams.Client, std::string(cmd.Name) + "\n");
     }
 
     return ACK_OK;

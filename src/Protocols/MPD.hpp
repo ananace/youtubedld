@@ -111,15 +111,18 @@ private:
 
         const MPD::CommandDefinition& getDefinition() const;
 
+        bool hasArg(size_t aIndex) const;
+        template<typename T>
+        bool isArg(size_t aIndex) const;
         template<typename T>
         T getArg(size_t aIndex) const;
     };
 
     int doAdd(const CommandParams& aParams);
-    int doAddid(uint32_t aClient, uint32_t aCommand, const std::string& aUrl, int aPosition);
-    int doClearerror(uint32_t aClient, uint32_t aCommand);
-    int doClose(uint32_t aClient, uint32_t aCommand);
-    int doCommands(uint32_t aClient, uint32_t aCommand);
+    int doAddid(const CommandParams& aParams);
+    int doClearerror(const CommandParams& aParams);
+    int doClose(const CommandParams& aParams);
+    int doCommands(const CommandParams& aParams);
     int doCommandList(uint32_t aClient, uint32_t aCommand);
     int doConsume(uint32_t aClient, uint32_t aCommand, bool aConsume);
     int doCurrentsong(uint32_t aClient, uint32_t aCommand);
