@@ -189,10 +189,9 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
     try
     {
         auto data = nlohmann::json::parse(ret);
-        if (data["is_live"].is_boolean() && data["is_live"])
-        {
-            data["duration"] = -1;
-        }
+        if (data["duration"].is_null())
+            data["duration"] = 0;
+
         if (data["thumbnail"].is_null())
         {
             auto thumbnails = data["thumbnails"];
@@ -216,7 +215,7 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
         else if (data.count("extractor") > 0 && !data["extractor"].is_null())
             response.Extractor = data["extractor"];
 
-        nlohmann::json chosenFormat = { { "tbr", -1.0 } };
+        nlohmann::json chosenFormat = { { "abr", -1.0 } };
 
         // Direct format match
         if (data.count("url") > 0)
@@ -239,17 +238,27 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
 
             for (auto& format : formats)
             {
+                if (format["acodec"] == "none")
+                    continue;
                 if (format["vcodec"] != "none")
                     continue;
 
-                if (format["tbr"].get<double>() > chosenFormat["tbr"].get<double>())
+                if (format["abr"].is_null())
+                    format["abr"] = 1.0;
+
+                if (format["abr"].get<double>() > chosenFormat["abr"].get<double>())
+                {
                     chosenFormat = format;
+                    Util::Log(Util::Log_Debug) << "Using format " << chosenFormat.dump();
+                }
             }
 
-            // Unable to find a suitable format without a vcodec, fall back to first one
-            if (chosenFormat.count("url") > 0 && !chosenFormat["url"].is_null())
+            // Unable to find a suitable format, fall back to first one
+            if (chosenFormat["url"].is_null())
             {
-                chosenFormat = formats.front();
+                chosenFormat = *std::find_if(formats.begin(), formats.end(), [](auto& format) { return format["acodec"] != "none"; });
+
+                Util::Log(Util::Log_Debug) << "Falling back to format " << chosenFormat.dump();
             }
         }
 

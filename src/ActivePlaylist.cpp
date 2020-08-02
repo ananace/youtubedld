@@ -28,6 +28,7 @@ void ActivePlaylist::init(Server& aServer)
 
     m_playbin = Gst::ElementFactory::create_element("playbin");
     // m_playbin->set_property("audio-sink", Gst::ElementFactory::create_element("autoaudiosink"));
+    m_playbin->set_property("video-sink", Gst::ElementFactory::create_element("fakesink"));
 
     int flags;
     m_playbin->get_property("flags", flags);
