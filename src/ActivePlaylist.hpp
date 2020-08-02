@@ -35,7 +35,7 @@ public:
     ActivePlaylist();
 
     void init(Server& aServer);
-    void update();
+    void update() override;
 
     Glib::RefPtr<Gst::Element> getPipeline() const;
 

@@ -53,10 +53,6 @@ void Server::init(int aArgc, const char** aArgv)
     m_pipeline = m_activePlaylist.getPipeline();
     m_pipeline->get_bus()->add_watch(sigc::mem_fun(*this, &Server::on_bus_message));
 
-    // m_source = Gst::ElementFactory::create_element("souphttpsrc");
-    // m_source->property("automatic-redirect", true);
-    // m_source->property("ssl-strict", false);
-
     // TODO: Plugin-ize
     if (m_config.getValueConv("MPD/Enabled", false))
     {
@@ -124,7 +120,7 @@ bool Server::on_tick()
     // Update protocols
     for (auto& prot : m_activeProtocols)
     {
-        for (int i = 0; prot->update() && i < 2; ++i)
+        for (int i = 0; prot->update() && i < 4; ++i)
             ; // Update up to twice in a row
 
         Protocols::Event ev;

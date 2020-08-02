@@ -137,15 +137,15 @@ bool MPDProto::update()
 
             auto& clBuf = cl->second.Buffer;
 
-            char buffer[256];
+            char buffer[512];
             int len = 0;
             do
             {
-                len = recv(ev.data.fd, &buffer[0], 255, 0);
+                len = recv(ev.data.fd, &buffer[0], 511, 0);
                 if (len > 0)
                 {
                     clBuf.append(&buffer[0], len);
-                    Util::Log(Util::Log_Info) << "[MPD] Read " << len << "B from " << cl->first << " (" << std::string(buffer, len -1) << ")";
+                    // Util::Log(Util::Log_Info) << "[MPD] Read " << len << "B from " << cl->first << " (" << std::string(buffer, len -1) << ")";
                 }
             } while(len > 0);
         }
@@ -340,7 +340,7 @@ void MPDProto::writeData(uint32_t aClient, const std::string& aData)
 
     send(cl.Socket, aData.c_str(), aData.size(), 0);
 
-    Util::Log(Util::Log_Info) << "[MPD] Wrote " << aData.size() << "B to " << aClient << " (" << aData.substr(0, aData.size() - 1) << ")";
+    // Util::Log(Util::Log_Info) << "[MPD] Wrote " << aData.size() << "B to " << aClient << " (" << aData.substr(0, aData.size() - 1) << ")";
 }
 
 std::string MPDProto::getIdleName(uint16_t aFlag)

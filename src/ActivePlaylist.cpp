@@ -5,6 +5,15 @@
 
 #include <random>
 
+Gst::Structure structure_from_map(const std::string& type, const std::unordered_map<std::string, std::string>& umap)
+{
+    auto ret = Gst::Structure(type);
+    for (auto& kv : umap)
+        ret.set_field(kv.first, kv.second);
+
+    return ret;
+}
+
 ActivePlaylist::ActivePlaylist()
     : m_server(nullptr)
     , m_playFlags(0)
@@ -18,6 +27,7 @@ void ActivePlaylist::init(Server& aServer)
     m_server = &aServer;
 
     m_playbin = Gst::ElementFactory::create_element("playbin");
+    // m_playbin->set_property("audio-sink", Gst::ElementFactory::create_element("autoaudiosink"));
 
     int flags;
     m_playbin->get_property("flags", flags);
@@ -110,6 +120,9 @@ void ActivePlaylist::pause()
 }
 void ActivePlaylist::resume()
 {
+    if (!m_currentSong)
+        return play();
+
     Gst::State state, pending;
     m_playbin->get_state(state, pending, {});
 
@@ -142,33 +155,61 @@ const Playlist::Song& ActivePlaylist::addSong(const std::string& aUrl, int aPosi
 }
 void ActivePlaylist::removeSong(const std::string& aSearch)
 {
-    Playlist::removeSong(aSearch);
     auto it = std::find_if(m_playQueue.begin(), m_playQueue.end(), [aSearch](auto* aSong) { return aSong->URL == aSearch || aSong->Title == aSearch; });
     if (it != m_playQueue.end())
         m_playQueue.erase(it);
+    if (*it == m_currentSong)
+    {
+        if (m_playQueue.empty())
+            stop();
+        else
+            next();
+    }
+
+    Playlist::removeSong(aSearch);
+
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }
 void ActivePlaylist::removeSong(size_t aSong)
 {
     auto id = getSong(aSong)->ID;
-    Playlist::removeSong(aSong);
     auto it = std::find_if(m_playQueue.begin(), m_playQueue.end(), [id](auto* aSong) { return aSong->ID == id; });
     if (it != m_playQueue.end())
         m_playQueue.erase(it);
+    if (*it == m_currentSong)
+    {
+        if (m_playQueue.empty())
+            stop();
+        else
+            next();
+    }
+
+    Playlist::removeSong(aSong);
+
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }
 void ActivePlaylist::removeSongID(size_t aID)
 {
-    Playlist::removeSongID(aID);
     auto it = std::find_if(m_playQueue.begin(), m_playQueue.end(), [aID](auto* aSong) { return aSong->ID == aID; });
     if (it != m_playQueue.end())
         m_playQueue.erase(it);
+    if (*it == m_currentSong)
+    {
+        if (m_playQueue.empty())
+            stop();
+        else
+            next();
+    }
+
+    Playlist::removeSongID(aID);
+
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }
 void ActivePlaylist::removeAllSongs()
 {
     Playlist::removeAllSongs();
     resetQueue();
+    stop();
 
     m_server->pushEvent(Protocols::Event(Protocols::Event_QueueChange));
 }
@@ -329,7 +370,10 @@ bool ActivePlaylist::isLive() const
 
 bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
 {
-    Util::Log(Util::Log_Debug) << "ChangeSong(" << aSong->URL << ", " << aState << ")";
+    if (aSong)
+        Util::Log(Util::Log_Debug) << "ChangeSong(" << aSong->URL << ", " << aState << ")";
+    else
+        Util::Log(Util::Log_Debug) << "ChangeSong(null" << ", " << aState << ")";
 
     if (m_currentSong)
     {
@@ -377,10 +421,15 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
         if (uri.empty())
             uri = m_currentSong->URL;
 
-        m_playbin->property("uri", Glib::ustring(uri));
+        Util::Log(Util::Log_Debug) << "- Playing (" << uri << ")";
+
+        m_playbin->set_property("uri", Glib::ustring(uri));
     }
     else if (aState == Gst::STATE_PLAYING)
         aState = Gst::STATE_READY;
+
+    if (!m_currentSong)
+        m_playbin->set_state(Gst::STATE_NULL);
 
     auto ret = m_playbin->set_state(aState);
     if (ret == Gst::STATE_CHANGE_NO_PREROLL)
@@ -591,9 +640,11 @@ void ActivePlaylist::on_source_setup(const Glib::RefPtr<Gst::Element>& aSource)
 {
     Util::Log(Util::Log_Debug) << "Setting up source of type " << aSource->get_name().raw();
 
-    // if (aSource->get_name().raw() == "souphttpsrc")
+    if (aSource->get_name().raw() == "souphttpsrc")
     {
         aSource->set_property("automatic-redirect", true);
+        aSource->set_property("compress", true);
+        aSource->set_property("extra-headers", structure_from_map("extra-headers", m_currentSong->DataHeaders));
         aSource->set_property("ssl-strict", false);
     }
 }

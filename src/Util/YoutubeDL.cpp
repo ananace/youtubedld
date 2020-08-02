@@ -131,16 +131,16 @@ YoutubeDLResponse YoutubeDL::download(const YoutubeDLRequest& aRequest)
         return { false };
     }
     else
-    {
         oss << std::quoted(aRequest.Url, '\'') << " ";
-    }
 
     if (!aRequest.VideoFormat.empty())
         oss << "--format=" << aRequest.VideoFormat << " ";
     else
         oss << "--format=bestaudio ";
+
     if (aRequest.ExtractAudio)
         oss << "--extract-audio ";
+
     if (!aRequest.AudioFormat.empty())
         oss << "--audio-format=" << aRequest.AudioFormat << " ";
 
@@ -189,6 +189,19 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
     try
     {
         auto data = nlohmann::json::parse(ret);
+        if (data["is_live"].is_boolean() && data["is_live"])
+        {
+            data["duration"] = -1;
+        }
+        if (data["thumbnail"].is_null())
+        {
+            auto thumbnails = data["thumbnails"];
+            if (thumbnails.empty())
+                data["thumbnail"] = "";
+            else
+                data["thumbnail"] = thumbnails.front();
+        }
+
         auto response = YoutubeDLResponse{ true, data["duration"], data["title"], data["thumbnail"] };
 
         if (data.count("artist") > 0 && !data["artist"].is_null())
@@ -241,7 +254,7 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
         }
 
         response.DownloadUrl = chosenFormat["url"];
-        response.DownloadHeaders = std::unordered_map<std::string, std::string>(chosenFormat["http_headers"]);
+        response.DownloadHeaders = chosenFormat["http_headers"].get<std::unordered_map<std::string, std::string>>();
 
         return response;
     }
