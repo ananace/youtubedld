@@ -4,6 +4,9 @@
 #include "../Util/EpollServer.hpp"
 
 #include <chrono>
+#include <deque>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -97,6 +100,16 @@ private:
         { }
     };
 
+    struct MPDMessage
+    {
+        uint32_t Client;
+        std::string CommandLine;
+        const Protocols::MPD::CommandDefinition* Command;
+        std::vector<std::string_view> Arguments;
+    };
+
+    void runThread();
+
     void handleMessage(void* aMessageData, bool aCmdList);
     int runCommandList(uint32_t aClient);
     int runCommand(uint32_t aClient, uint32_t aCommand, const std::vector<std::string_view>& aArgs);
@@ -150,6 +163,13 @@ private:
 
     Util::EpollServer m_server;
     uint32_t m_clientCounter;
+    bool m_running;
+
+    std::thread m_serverThread;
+    std::deque<std::pair<uint32_t,Protocols::Event>> m_sendQueue;
+    std::deque<MPDMessage> m_recvQueue;
+    std::mutex m_sendQueueMutex;
+    std::mutex m_recvQueueMutex;
 
     std::unordered_map<uint32_t, Client> m_clientMap;
 };

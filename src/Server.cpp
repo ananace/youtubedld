@@ -120,8 +120,7 @@ bool Server::on_tick()
     // Update protocols
     for (auto& prot : m_activeProtocols)
     {
-        for (int i = 0; prot->update() && i < 4; ++i)
-            ; // Update up to twice in a row
+        prot->update();
 
         Protocols::Event ev;
         while (prot->poll(ev))
