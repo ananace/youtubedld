@@ -14,6 +14,8 @@ Gst::Structure structure_from_map(const std::string& type, const std::unordered_
     return ret;
 }
 
+bool g_tempChange = false;
+
 ActivePlaylist::ActivePlaylist()
     : m_server(nullptr)
     , m_playFlags(0)
@@ -423,9 +425,22 @@ bool ActivePlaylist::changeSong(const Song* aSong, Gst::State aState)
         if (uri.empty())
             uri = m_currentSong->URL;
 
-        Util::Log(Util::Log_Debug) << "- Playing (" << uri << ")";
+        Gst::State state, pending;
+        m_playbin->get_state(state, pending, {});
 
-        m_playbin->set_property("uri", Glib::ustring(uri));
+        if (state == Gst::STATE_PLAYING)
+        {
+            Util::Log(Util::Log_Debug) << "- Playing (" << uri << ")";
+            Util::Log(Util::Log_Debug) << "- Sending EOS";
+            g_tempChange = true;
+            m_playbin->send_event(Gst::EventEos::create());
+            m_playbin->set_property("uri", Glib::ustring(uri));
+        }
+        else
+        {
+            Util::Log(Util::Log_Debug) << "- Playing (" << uri << ")";
+            m_playbin->set_property("uri", Glib::ustring(uri));
+        }
     }
     else if (aState == Gst::STATE_PLAYING)
         aState = Gst::STATE_READY;
@@ -622,6 +637,13 @@ bool ActivePlaylist::on_bus_message(const Glib::RefPtr<Gst::Bus>& /* aBus */, co
 
 void ActivePlaylist::on_about_to_finish()
 {
+    if (g_tempChange)
+    {
+        Util::Log(Util::Log_Debug) << "About to finish after song change.";
+        g_tempChange = false;
+        return;
+    }
+
     Util::Log(Util::Log_Debug) << "About to finish current stream, calling next.";
 
     if (hasSingle() > Single_False)
