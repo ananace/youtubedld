@@ -13,3 +13,6 @@ plain_build:
     - cd build
     - cmake ..
     - make -j$(nproc --ignore=1)
+  artifacts:
+    paths:
+      - build/bin/YoutubeDLd
