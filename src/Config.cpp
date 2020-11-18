@@ -60,12 +60,41 @@ bool Config::loadFromArgs(int aArgc, const char** aArgv)
     {
         std::string arg(aArgv[i]);
 
-        if (arg == "-v")
-            setValue("Verbose", "1");
-        else if (arg == "-c")
+        if (arg.length() < 3 || arg[0] != '-')
+            continue;
+
+        if (arg[1] == '-')
         {
-            assert(++i < aArgc);
-            setValue("ConfigDir", aArgv[i]);
+            if (arg == "--help")
+                ;
+            else if (arg == "--verbose")
+                setValue("Verbose", "1");
+            else if (arg == "--configdir")
+            {
+                assert(++i < aArgc);
+                setValue("ConfigDir", aArgv[i]);
+            }
+        }
+        else
+        {
+            for (size_t j = 1; j < arg.length(); ++j)
+            {
+                char shortArg = arg[j];
+
+                switch (shortArg)
+                {
+                case 'h': break;
+                case 'v': setValue("Verbose", "1"); break;
+                case 'c':
+                    assert(++i < aArgc);
+                    setValue("ConfigDir", aArgv[i]);
+                    break;
+
+                default:
+                    // TODO Error handling
+                    break;
+                }
+            }
         }
     }
 
@@ -74,7 +103,6 @@ bool Config::loadFromArgs(int aArgc, const char** aArgv)
 
 bool Config::loadFromEnv()
 {
-
     return true;
 }
 
