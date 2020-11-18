@@ -54,6 +54,8 @@ void YoutubeDL::findInstall()
     while (std::getline(iss, token, ':'))
         tokens.push_back(token);
 
+    tokens.push_back(fs::current_path());
+
     findInstall(tokens);
 }
 
@@ -73,6 +75,23 @@ void YoutubeDL::findInstall(const std::vector<std::string>& aSearchPaths)
     }
 }
 
+bool YoutubeDL::canLocalInstall() const
+{
+    auto curPath = fs::current_path();
+    auto binaryPath = curPath / "youtube-dl";
+    if (fs::is_regular_file(binaryPath))
+        return true;
+
+    auto ofs = std::ofstream(binaryPath);
+    if (ofs.good())
+    {
+        fs::remove(binaryPath);
+        return true;
+    }
+
+    return false;
+}
+
 bool YoutubeDL::isAvailable() const
 {
     return !m_installPath.empty() && fs::is_regular_file(m_installPath);
@@ -87,17 +106,31 @@ std::string YoutubeDL::getVersion() const
 
 std::string YoutubeDL::getLatestVersion() const
 {
+    // https://youtube-dl.org/downloads/latest/
+    //
+    // Generates redirect like; Location: https://youtube-dl.org/downloads/2020.11.18/
     return "";
 }
 
-void YoutubeDL::install()
+bool YoutubeDL::install()
 {
     // TODO
+    return false;
 }
 
-void YoutubeDL::update()
+bool YoutubeDL::update()
 {
-    // TODO
+    // TODO: Proper error handling
+    if (!isAvailable())
+        return false;
+
+    std::string out;
+    execute("--update", out);
+
+    if (out.find("Please use that to update.") != std::string::npos)
+        return false;
+
+    return true;
 }
 
 bool YoutubeDL::validRequest(const YoutubeDLRequest& aRequest) const
@@ -169,7 +202,7 @@ YoutubeDLResponse YoutubeDL::request(const YoutubeDLRequest& aRequest)
     }
     else
     {
-        oss << "-q -s -j " << std::quoted(aRequest.Url, '\'') << " ";
+        oss << "-C -q -s -j " << std::quoted(aRequest.Url, '\'') << " ";
     }
 
     if (aRequest.ExtractAudio)

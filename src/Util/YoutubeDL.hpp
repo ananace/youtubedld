@@ -42,13 +42,14 @@ public:
 
     void findInstall();
     void findInstall(const std::vector<std::string>& aSearchPaths);
+    bool canLocalInstall() const;
 
     bool isAvailable() const;
     std::string getVersion() const;
     std::string getLatestVersion() const;
 
-    void install();
-    void update();
+    bool install();
+    bool update();
 
     bool validRequest(const YoutubeDLRequest& aRequest) const;
 
