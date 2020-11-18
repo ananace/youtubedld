@@ -21,6 +21,9 @@ void Server::init(int aArgc, const char** aArgv)
 {
     m_config.loadFromArgs(aArgc, aArgv);
 
+    if (m_config.getValueConv("Verbose", false))
+        Util::SetLogLevel(Util::Log_Debug);
+
     m_config.loadFromFile("config.ini");
     m_config.loadFromFile("/etc/youtubedld.conf");
     m_config.loadFromFile("${XDG_CONFIG_DIR:-$HOME/.config}/youtubedld.conf");
@@ -34,7 +37,9 @@ void Server::init(int aArgc, const char** aArgv)
     YoutubeDL& ydl = YoutubeDL::getSingleton();
     ydl.findInstall();
     if (!ydl.isAvailable())
+    {
         Util::Log(Util::Log_Info) << "No YDL found";
+    }
     else
         Util::Log(Util::Log_Info) << "YDL version: " << ydl.getVersion();
 
@@ -92,7 +97,7 @@ void Server::run()
     if (m_activeProtocols.empty())
     {
         Util::Log(Util::Log_Info) << "No active protocols, exiting.";
-        return;
+        m_mainLoop->quit();
     }
 
     // m_activePlaylist.addSong("https://freesound.org/data/previews/449/449728_4068345-lq.mp3");
@@ -103,6 +108,7 @@ void Server::run()
 
     m_mainLoop->run();
     m_activePlaylist.getPipeline()->set_state(Gst::STATE_NULL);
+    Util::Log(Util::Log_Info) << "No active protocols, exiting.";
 }
 
 std::chrono::milliseconds Server::getUptime() const

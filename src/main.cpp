@@ -29,7 +29,7 @@ int main(int argc, const char** argv)
     timeLogger->setPrepend(formatTime);
 
     Util::SetLogger(timeLogger);
-    Util::SetLogLevel(Util::Log_Debug);
+    Util::SetLogLevel(Util::Log_Info);
 
     Server srv;
 
