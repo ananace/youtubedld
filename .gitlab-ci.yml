@@ -1,10 +1,11 @@
 ---
-image: ubuntu:18.04
+image: ubuntu
 
 plain_build:
   before_script:
     - apt-get update -y -qq
-    - apt-get install -y -q --no-install-recommends cmake make g++
+    - apt-get install -y -q --no-install-recommends
+      cmake make g++ libgstreamermm-1.0-dev
   script:
     - mkdir build
     - cd build
