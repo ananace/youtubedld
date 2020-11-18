@@ -2,6 +2,8 @@
 image: ubuntu
 
 plain_build:
+  variables:
+      DEBIAN_FRONTEND: noninteractive
   before_script:
     - apt-get update -y -qq
     - apt-get install -y -q --no-install-recommends
