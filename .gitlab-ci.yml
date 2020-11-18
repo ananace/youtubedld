@@ -4,7 +4,7 @@ image: ubuntu:18.04
 plain_build:
   before_script:
     - apt-get update -y -qq
-    - apt-get install -y -q --no-install-recommends cmake make
+    - apt-get install -y -q --no-install-recommends cmake make g++
   script:
     - mkdir build
     - cd build
